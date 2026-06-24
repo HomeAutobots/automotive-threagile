@@ -30,6 +30,81 @@ AUTH_RANK = {
 LIKELIHOOD_W = {"unlikely": 1, "likely": 2, "very-likely": 3, "frequent": 4}
 IMPACT_W = {"low": 1, "medium": 2, "high": 3, "very-high": 4}
 
+# ---- Per-hop technique tagging (SELF-CONTAINED) -----------------------------
+# These are public taxonomy IDs hand-curated from frameworks/atm/{tactics,
+# crosswalk}.yaml and frameworks/attack/{techniques,crosswalk}.yaml. They are
+# EMBEDDED on purpose: the analyzer must run in CI WITHOUT the (gitignored)
+# frameworks/ tree, so nothing here is read from disk at runtime.
+#
+# ATT&CK IDs verified against attack.mitre.org ICS/Enterprise/Mobile (v19.1).
+# ATM IDs verified against the Auto-ISAC ATM STIX 2.1 export.
+#
+# Each entry: (att&ck technique ids, ATM technique ids, ATM tactic id).
+# A hop is classified by its ROLE in the path (entry/pivot/bus/target) and the
+# tags on the node (or the edge into it); the first matching rule wins.
+
+# Bus-link tags that mark an in-vehicle fieldbus hop.
+BUS_TAGS = {"can", "can-fd", "lin", "flexray", "sent"}
+# Node tags that mark a pivot (domain/zonal bridge).
+PIVOT_TAGS = {"gateway", "zone-controller"}
+
+# Entry-hop rules: ordered; first whose trigger tags intersect the node tags wins.
+ENTRY_RULES = [
+    # (trigger tags, att&ck ids, att&ck names, ATM ids, ATM names, ATM tactic)
+    (
+        {"v2x", "gnss"},
+        ["T0860"], ["Wireless Compromise"],
+        ["ATM-T0003", "ATM-T0004"],
+        ["Manipulate Communications", "Analog Sensor Attacks"],
+        "ATM-TA0001",
+    ),
+    (
+        {"obd-ii", "physical"},
+        ["T0883"], ["Internet Accessible Device"],
+        ["ATM-T0010"], ["Aftermarket, Customer, or Dealer Equipment"],
+        "ATM-TA0002",
+    ),
+    (
+        {"cellular", "telematics", "charging", "ota"},
+        ["T0883"], ["Internet Accessible Device"],
+        ["ATM-T0012"], ["Exploit via Radio Interface"],
+        "ATM-TA0002",
+    ),
+    (
+        {"bluetooth", "wifi", "uwb", "connectivity"},
+        ["T0860"], ["Wireless Compromise"],
+        ["ATM-T0012"], ["Exploit via Radio Interface"],
+        "ATM-TA0002",
+    ),
+]
+
+# Pivot hop (intermediate gateway / zone-controller node).
+PIVOT_TECH = (
+    ["T0867", "T0866"],
+    ["Lateral Tool Transfer", "Exploitation of Remote Services"],
+    ["ATM-T0051", "ATM-T0052"],
+    ["Bridge Vehicle Networks", "Exploit ECU for Lateral Movement"],
+    "ATM-TA0009",
+)
+
+# Bus hop (edge into the next node tagged with a fieldbus).
+BUS_TECH = (
+    ["T1692.001", "T0849"],
+    ["Command Message", "Masquerading"],
+    ["ATM-T0070"],
+    ["Modify Bus Message"],
+    "ATM-TA0013",
+)
+
+# Target hop (terminal safety-critical node).
+TARGET_TECH = (
+    ["T0831", "T0880"],
+    ["Manipulation of Control", "Loss of Safety"],
+    ["ATM-T0070", "ATM-T0068"],
+    ["Modify Bus Message", "CAN Bus Denial of Service"],
+    "ATM-TA0013",
+)
+
 
 def calculate_severity(likelihood: str, impact: str) -> str:
     """Approximates Threagile's likelihood x impact -> severity bucketing.
@@ -84,15 +159,39 @@ def build_reachability_graph(model: dict) -> nx.Graph:
         for link_name, link in (a.get("communication_links") or {}).items():
             dst = link["target"]
             auth = link.get("authentication", "none")
-            # Collapse parallel links to the weakest authentication seen.
+            tags = set(link.get("tags") or [])
+            # Collapse parallel links to the weakest authentication seen, and
+            # union all link tags so an edge carries every bus it represents.
             if g.has_edge(src, dst):
+                g[src][dst]["tags"] |= tags
                 if AUTH_RANK.get(auth, 0) < AUTH_RANK.get(g[src][dst]["auth"], 9):
                     g[src][dst].update(auth=auth, label=link_name)
             else:
                 g.add_edge(src, dst, auth=auth,
                            protocol=link.get("protocol", "unknown-protocol"),
-                           label=link_name)
+                           label=link_name, tags=set(tags))
     return g
+
+
+def edge_bus_tags(g: nx.Graph, u: str, v: str) -> set:
+    """Fieldbus tags governing the u<->v edge.
+
+    Prefers explicit link tags. When a link carries no tags (e.g. the minimal
+    Jeep demo model), fall back to inferring a CAN hop from a binary-protocol
+    edge between two in-vehicle (non-internet) nodes that both carry ECU/bridge
+    tags. This keeps bus hops visible without inventing tags for off-bus edges.
+    """
+    e = g[u][v]
+    explicit = e["tags"] & BUS_TAGS
+    if explicit:
+        return explicit
+    in_vehicle_tags = {"ecu", "gateway", "zone-controller", "safety-critical"}
+    nu, nv = g.nodes[u], g.nodes[v]
+    if (e.get("protocol") == "binary"
+            and not nu["internet"] and not nv["internet"]
+            and (nu["tags"] & in_vehicle_tags) and (nv["tags"] & in_vehicle_tags)):
+        return {"can"}
+    return set()
 
 
 def entries(g: nx.Graph) -> list:
@@ -104,6 +203,87 @@ def entries(g: nx.Graph) -> list:
 def crown_jewels(g: nx.Graph) -> list:
     return [n for n, d in g.nodes(data=True)
             if d["tags"] & CROWN_JEWEL_TAGS and not d["out_of_scope"]]
+
+
+# ---- Per-hop technique classification --------------------------------------
+def _entry_tech(node_tags: set):
+    for trig, ax_ids, ax_names, atm_ids, atm_names, atm_ta in ENTRY_RULES:
+        if node_tags & trig:
+            return (list(ax_ids), list(ax_names),
+                    list(atm_ids), list(atm_names), atm_ta)
+    return None
+
+
+def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
+    """Annotate each NODE in the path with technique IDs by its role.
+
+    Returns one dict per node (hop), each with attack_ids/atm_ids/atm_tactic
+    (lists may be empty when no rule matches -> hop intentionally untagged).
+    A node can accumulate several roles (e.g. the terminal node reached over a
+    CAN edge is both a bus hop and the target hop); IDs are merged, order kept,
+    duplicates dropped.
+    """
+    hops = []
+    for i, node in enumerate(path):
+        ndata = g.nodes[node]
+        ntags = ndata["tags"]
+        ax_ids, ax_names, atm_ids, atm_names = [], [], [], []
+        atm_tactics = []
+
+        def add(ax_i, ax_n, atm_i, atm_n, atm_ta):
+            for x, n in zip(ax_i, ax_n):
+                if x not in ax_ids:
+                    ax_ids.append(x)
+                    ax_names.append(n)
+            for x, n in zip(atm_i, atm_n):
+                if x not in atm_ids:
+                    atm_ids.append(x)
+                    atm_names.append(n)
+            if atm_ta not in atm_tactics:
+                atm_tactics.append(atm_ta)
+
+        is_first = i == 0
+        is_last = node == jewel and i == len(path) - 1
+        # Entry hop: first node, internet-exposed.
+        if is_first and ndata["internet"]:
+            t = _entry_tech(ntags)
+            if t:
+                add(*t)
+        # Bus hop: the edge INTO this node is a fieldbus link.
+        if i > 0 and edge_bus_tags(g, path[i - 1], node):
+            add(*BUS_TECH)
+        # Pivot hop: intermediate gateway / zone-controller.
+        if not is_first and not is_last and (ntags & PIVOT_TAGS):
+            add(*PIVOT_TECH)
+        # Target hop: terminal safety-critical node.
+        if is_last and ("safety-critical" in ntags):
+            add(*TARGET_TECH)
+
+        hops.append({
+            "node": node,
+            "title": ndata["title"],
+            "attack_ids": ax_ids,
+            "attack_names": ax_names,
+            "atm_ids": atm_ids,
+            "atm_names": atm_names,
+            "atm_tactics": atm_tactics,
+        })
+    return hops
+
+
+def _attack_chain(hops: list) -> str:
+    return " -> ".join("/".join(h["attack_ids"]) if h["attack_ids"] else "-"
+                       for h in hops)
+
+
+def _atm_chain(hops: list) -> str:
+    return " -> ".join("/".join(h["atm_ids"]) if h["atm_ids"] else "-"
+                       for h in hops)
+
+
+def _atm_tactic_chain(hops: list) -> str:
+    return " -> ".join("/".join(h["atm_tactics"]) if h["atm_tactics"] else "-"
+                       for h in hops)
 
 
 # ---- Analysis ---------------------------------------------------------------
@@ -139,7 +319,7 @@ def score_path(g: nx.Graph, path: list, jewel: str) -> dict:
 
 
 def analyze(g: nx.Graph, cutoff: int) -> dict:
-    srcs, jewels = entries(g), crown_jewels(g)
+    srcs, jewels = sorted(entries(g)), sorted(crown_jewels(g))
     paths, chokepoint_tally = [], {}
 
     for s in srcs:
@@ -152,6 +332,7 @@ def analyze(g: nx.Graph, cutoff: int) -> dict:
                 "entry": s, "jewel": j,
                 "shortest": shortest,
                 "num_paths": len(all_paths),
+                "hops_tagged": tag_path(g, shortest, j),
                 **score_path(g, shortest, j),
             })
             # Minimum node cut = fewest nodes whose removal severs s->j.
@@ -174,8 +355,11 @@ def _path_str(g, path):
 def emit_risks(g: nx.Graph, result: dict) -> dict:
     risks_identified = {}
     for p in result["paths"]:
+        hops = p["hops_tagged"]
         title = (f"<b>Attack path</b> {_path_str(g, p['shortest'])} "
-                 f"[{p['hops']}h, {p['num_paths']} path(s), weakest auth {p['weakest_auth']}]")
+                 f"[{p['hops']}h, {p['num_paths']} path(s), weakest auth {p['weakest_auth']}] "
+                 f"| ATT&CK: {_attack_chain(hops)} "
+                 f"| ATM: {_atm_chain(hops)}")
         risks_identified[title] = {
             "severity": p["severity"],
             "exploitation_likelihood": p["exploitation_likelihood"],
@@ -205,7 +389,16 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
         categories["Multi-Hop Attack Path To Safety-Critical ECU"] = {
             "id": "attack-path-to-safety-critical-ecu",
             "description": "An internet-exposed asset can reach a safety-critical "
-                           "ECU across one or more intermediate nodes/buses.",
+                           "ECU across one or more intermediate nodes/buses. "
+                           "Each risk title carries the per-hop technique chain: "
+                           "the 'ATT&CK:' and 'ATM:' arrows are aligned hop-by-hop "
+                           "with the path's '->' node chain (one entry per node, "
+                           "'/' separates co-occurring techniques on a hop, '-' "
+                           "means that hop matched no mapping rule). ATT&CK IDs are "
+                           "MITRE ATT&CK v19.1 (ICS); ATM IDs are Auto-ISAC ATM "
+                           "technique IDs. Roles: entry=Initial Access, "
+                           "gateway/zone=Lateral Movement, fieldbus edge=Modify Bus "
+                           "Message, terminal=Affect Vehicle Function.",
             "impact": "Remote attacker can inject control messages affecting "
                       "vehicle safety functions (steering, braking, transmission).",
             "asvs": "V1 - Architecture, Design and Threat Modeling",
@@ -261,10 +454,14 @@ def print_summary(g, result):
     print(f"  crown jewels (safety-critical): "
           f"{[g.nodes[n]['title'] for n in result['jewels']]}\n")
     for p in result["paths"]:
+        hops = p["hops_tagged"]
         print(f"  [{p['severity'].upper():8}] {g.nodes[p['jewel']]['title']:18} "
               f"<- {p['hops']} hops, {p['num_paths']} path(s), "
               f"weakest auth={p['weakest_auth']}")
         print(f"             {_path_str(g, p['shortest'])}")
+        print(f"      ATT&CK:  {_attack_chain(hops)}")
+        print(f"      ATM:     {_atm_chain(hops)}")
+        print(f"      ATM-TA:  {_atm_tactic_chain(hops)}")
     print("\n  chokepoints (min node cut):")
     for node, jewels in sorted(result["chokepoints"].items(),
                                key=lambda kv: -len(kv[1])):
