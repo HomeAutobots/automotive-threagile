@@ -66,3 +66,20 @@ jobs:
             output/risks.json
             output/risks.xlsx
           if-no-files-found: error
+
+  rules:
+    name: Custom risk rules (cmd/script harness)
+    runs-on: ubuntu-latest
+    env:
+      THREAGILE_REF: 74e323ed635f026ca85bd61b5082f0da053ba1b2  # pinned Threagile source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Fetch Threagile source (pinned) for the cmd/script harness
+        run: |
+          git clone --no-checkout https://github.com/Threagile/threagile.git /tmp/threagile-src
+          git -C /tmp/threagile-src checkout "$THREAGILE_REF"
+      - name: Validate custom risk rules
+        run: ./scripts/test-risk-rules.sh /tmp/threagile-src

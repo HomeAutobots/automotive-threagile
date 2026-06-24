@@ -48,10 +48,20 @@ local hook becomes a convenience rather than the primary guard.
 - **Ruff** — lints `scripts/`.
 - **Threagile** — runs `threagile analyze` in Docker and uploads the report + diagrams
   as a build artifact.
+- **Custom risk rules** — runs Threagile's `cmd/script` harness (pinned source + Go) over
+  each rule in `model/custom-risk-rules/` against the committed parsed-format fixture,
+  asserting each fires on its intended asset and skips its negative control.
 
 Run the fast checks locally before pushing:
 
 ```bash
 ./scripts/validate-model.sh
 python3 scripts/attack_path_analyzer.py scripts/examples/jeep-demo.threagile.yaml --out /tmp/demo.yaml
+```
+
+To run the custom-rule checks locally you need Go and the Threagile source:
+
+```bash
+git clone https://github.com/Threagile/threagile.git /tmp/threagile-src
+./scripts/test-risk-rules.sh /tmp/threagile-src
 ```
