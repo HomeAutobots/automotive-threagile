@@ -9,8 +9,25 @@ cannot express (multi-hop reachability + chokepoint / min-cut), and writes the
 findings back as `individual_risk_categories` so they appear in the normal
 Threagile report alongside every native risk.
 
+Graph direction
+---------------
+By DEFAULT the reachability graph is UNDIRECTED (``nx.Graph``): compromising a
+node grants an attacker use of every link on that node in both directions, and
+the emitted output is exactly what it has always been.
+
+Pass ``--directed`` to build a ``nx.DiGraph`` instead. For every communication
+link the analyzer then adds the FORWARD edge (source -> target) AND a REVERSE
+edge (target -> source) -- because owning a node lets the attacker drive its
+links either way -- EXCEPT when the link is a true one-way diode. A link is
+treated as a diode (forward edge only, no reverse edge) when it is marked
+``readonly: true`` OR carries a ``diode`` tag. Reachability and pathfinding then
+follow directed paths, so a diode can sever a path that the undirected graph
+would have found. Everything downstream (entries, crown jewels, per-hop
+technique tagging, scoring, emit) works on either graph type.
+
 Usage:
-    python attack_path_analyzer.py <model.yaml> [--out attack-paths.yaml] [--cutoff 8]
+    python attack_path_analyzer.py <model.yaml> [--out attack-paths.yaml]
+        [--cutoff 8] [--directed]
 """
 
 import argparse
@@ -128,17 +145,46 @@ def load_model(path: str) -> dict:
         return yaml.safe_load(f)
 
 
-def build_reachability_graph(model: dict) -> nx.Graph:
-    """Build an UNDIRECTED graph keyed by technical-asset id.
+def _is_diode(link: dict) -> bool:
+    """A link is a one-way diode when readonly or explicitly tagged 'diode'."""
+    return bool(link.get("readonly")) or ("diode" in set(link.get("tags") or []))
 
-    Undirected on purpose: a Threagile communication link records DATA-FLOW
-    direction (in a vehicle, telemetry mostly flows UP toward the head unit and
-    cloud), but compromising a node grants an attacker use of its links in
-    BOTH directions. Following only outgoing data-flow edges would make the
-    downward command-injection path invisible. Swap to a DiGraph with reverse
-    edges if you need to honour true unidirectional gateways/diodes.
+
+def _add_or_merge_edge(g, src, dst, link_name, link):
+    """Add an edge src->dst (or, undirected, src<->dst), collapsing parallels.
+
+    Parallel links between the same ordered pair collapse to the WEAKEST
+    authentication seen and UNION their tags, so an edge carries every bus it
+    represents. For a DiGraph this is per-direction; ``has_edge`` is direction-
+    aware, which is exactly what we want for the forward/reverse split.
     """
-    g = nx.Graph()
+    auth = link.get("authentication", "none")
+    tags = set(link.get("tags") or [])
+    if g.has_edge(src, dst):
+        g[src][dst]["tags"] |= tags
+        if AUTH_RANK.get(auth, 0) < AUTH_RANK.get(g[src][dst]["auth"], 9):
+            g[src][dst].update(auth=auth, label=link_name)
+    else:
+        g.add_edge(src, dst, auth=auth,
+                   protocol=link.get("protocol", "unknown-protocol"),
+                   label=link_name, tags=set(tags))
+
+
+def build_reachability_graph(model: dict, directed: bool = False):
+    """Build a graph keyed by technical-asset id.
+
+    Undirected by default (``directed=False``): a Threagile communication link
+    records DATA-FLOW direction (in a vehicle, telemetry mostly flows UP toward
+    the head unit and cloud), but compromising a node grants an attacker use of
+    its links in BOTH directions. Following only outgoing data-flow edges would
+    make the downward command-injection path invisible.
+
+    With ``directed=True`` the graph is a ``nx.DiGraph``: each link adds the
+    forward edge AND a reverse edge (compromise grants the link both ways),
+    EXCEPT true diodes (``readonly: true`` or a ``diode`` tag), which add the
+    forward edge only. This honours real unidirectional gateways/diodes.
+    """
+    g = nx.DiGraph() if directed else nx.Graph()
     assets = model.get("technical_assets", {}) or {}
 
     for title, a in assets.items():
@@ -158,18 +204,14 @@ def build_reachability_graph(model: dict) -> nx.Graph:
         src = a["id"]
         for link_name, link in (a.get("communication_links") or {}).items():
             dst = link["target"]
-            auth = link.get("authentication", "none")
-            tags = set(link.get("tags") or [])
-            # Collapse parallel links to the weakest authentication seen, and
-            # union all link tags so an edge carries every bus it represents.
-            if g.has_edge(src, dst):
-                g[src][dst]["tags"] |= tags
-                if AUTH_RANK.get(auth, 0) < AUTH_RANK.get(g[src][dst]["auth"], 9):
-                    g[src][dst].update(auth=auth, label=link_name)
-            else:
-                g.add_edge(src, dst, auth=auth,
-                           protocol=link.get("protocol", "unknown-protocol"),
-                           label=link_name, tags=set(tags))
+            # Forward edge always exists.
+            _add_or_merge_edge(g, src, dst, link_name, link)
+            # For a DiGraph add the reverse edge too, unless the link is a
+            # diode. (For an undirected Graph the edge is already bidirectional,
+            # and we deliberately ignore the diode flag to preserve the
+            # historical default behaviour and emitted output.)
+            if directed and not _is_diode(link):
+                _add_or_merge_edge(g, dst, src, link_name, link)
     return g
 
 
@@ -448,6 +490,35 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
     return {"individual_risk_categories": categories}
 
 
+def path_mitigation_hint(g, path: list, chokepoints: dict) -> str:
+    """One-line, concrete hardening hint naming WHERE to break this path.
+
+    Prefers a chokepoint that actually lies on this path (the min-cut node the
+    whole path funnels through); else the first gateway/zone-controller hop;
+    else the first intermediate node. Names the fix, not just the node.
+    """
+    interior = path[1:-1] if len(path) > 2 else path[1:]
+    target = None
+    # 1) a gating chokepoint sitting on this very path.
+    on_path_choke = [n for n in interior if n in chokepoints]
+    if on_path_choke:
+        target = on_path_choke[0]
+    # 2) first gateway / zone-controller hop.
+    if target is None:
+        for n in interior:
+            if g.nodes[n]["tags"] & PIVOT_TAGS:
+                target = n
+                break
+    # 3) fall back to the first intermediate hop.
+    if target is None and interior:
+        target = interior[0]
+    if target is None:
+        return ("mitigate: place an authenticated, message-filtering boundary "
+                "between the external interface and the safety-critical ECU")
+    return (f"mitigate: insert an authenticated, CAN-ID-filtering gateway at "
+            f"{g.nodes[target]['title']} (SecOC + secure boot) to break this path")
+
+
 def print_summary(g, result):
     print(f"  entries (internet-exposed): "
           f"{[g.nodes[n]['title'] for n in result['entries']]}")
@@ -462,6 +533,7 @@ def print_summary(g, result):
         print(f"      ATT&CK:  {_attack_chain(hops)}")
         print(f"      ATM:     {_atm_chain(hops)}")
         print(f"      ATM-TA:  {_atm_tactic_chain(hops)}")
+        print(f"      {path_mitigation_hint(g, p['shortest'], result['chokepoints'])}")
     print("\n  chokepoints (min node cut):")
     for node, jewels in sorted(result["chokepoints"].items(),
                                key=lambda kv: -len(kv[1])):
@@ -473,9 +545,14 @@ def main():
     ap.add_argument("model")
     ap.add_argument("--out", default="attack-paths.yaml")
     ap.add_argument("--cutoff", type=int, default=8)
+    ap.add_argument(
+        "--directed", action="store_true",
+        help="Build a directed reachability graph (DiGraph). Each link gets a "
+             "forward AND reverse edge, except diodes (readonly:true or a "
+             "'diode' tag), which stay forward-only. Default is undirected.")
     args = ap.parse_args()
 
-    g = build_reachability_graph(load_model(args.model))
+    g = build_reachability_graph(load_model(args.model), directed=args.directed)
     print(f"Graph: {g.number_of_nodes()} nodes, {g.number_of_edges()} edges")
     result = analyze(g, args.cutoff)
     print_summary(g, result)

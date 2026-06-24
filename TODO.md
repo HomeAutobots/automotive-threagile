@@ -43,12 +43,13 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 
 ## Analyzer (`scripts/attack_path_analyzer.py`)
 - [x] Per-hop ATM + ATT&CK technique tagging.
-- [ ] Optional **directed / reverse-edge** mode for true unidirectional gateways/diodes (the
-      graph is undirected by design today).
+- [x] Optional **directed / reverse-edge** mode (`--directed`) — DiGraph with forward+reverse
+      edges except true diodes (`readonly: true` or a `diode` tag).
 - [ ] **Path-realism weighting** — weight/annotate paths by whether a real Auto-ISAC
-      `ATM-Pxxxx` campaign exercised that technique against that asset class.
-- [ ] Per-path mitigation hints derived from the chokepoint (min-cut) results.
-- [ ] `pytest` unit tests beyond the single Jeep-demo regression.
+      `ATM-Pxxxx` campaign exercised that technique against that asset class. *(Needs the
+      local-only campaign data embedded, like the technique tags — deferred.)*
+- [x] Per-path mitigation hints (stdout) derived from the chokepoint (min-cut) results.
+- [x] `pytest` unit tests (`tests/test_analyzer.py`, 13 cases) + CI `tests` job.
 
 ## Technique mapping (maintained locally; not part of the published repo)
 - [ ] Fill the ATM / ATT&CK crosswalk orphans now that the assets exist — V2X, GNSS,

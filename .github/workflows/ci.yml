@@ -35,6 +35,19 @@ jobs:
                <(grep -v '^#' scripts/examples/jeep-demo.attack-paths.expected.yaml)
           echo "analyzer regression OK"
 
+  tests:
+    name: Pytest (analyzer unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python deps
+        run: pip install pytest networkx pyyaml
+      - name: Run pytest
+        run: pytest -q
+
   lint:
     name: Ruff (Python)
     runs-on: ubuntu-latest
@@ -45,8 +58,8 @@ jobs:
           python-version: "3.12"
       - name: Install ruff
         run: pip install ruff
-      - name: Lint scripts/
-        run: ruff check scripts/
+      - name: Lint scripts/ and tests/
+        run: ruff check scripts/ tests/
 
   threagile:
     name: Threagile analyze + report artifact
