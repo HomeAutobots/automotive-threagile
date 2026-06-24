@@ -22,6 +22,8 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `reachable-unauthenticated-diagnostics.yaml` | In-scope asset that originates an `obd-ii` or `doip` link with no authentication — an unauthenticated UDS diagnostic/flashing surface. | elevation-of-privilege / CWE-1188 |
 | `missing-secoc-on-safety-bus.yaml` | In-scope asset that originates a CAN/CAN FD/LIN/FlexRay link reaching a `safety-critical` target (or the asset itself is safety-critical) where authentication is NOT `credentials` (SecOC = AES-CMAC + freshness). Broader than the unauthenticated-safety-bus rule: also flags safety-bus links carrying some other auth (e.g. `token`) but no SecOC. | tampering / CWE-345 |
 | `cross-domain-link-no-filter.yaml` | In-scope asset tagged with an exposure tag (`connectivity`/`telematics`/`infotainment`/`external`/`v2x`) that originates a no-auth link to a `safety-critical`/`powertrain`/`chassis` target where neither endpoint is a `gateway`/`zone-controller` — an exposed domain reaching safety without an authenticated filtering boundary. | elevation-of-privilege / CWE-923 |
+| `unauthenticated-gateway-bridge.yaml` | In-scope asset tagged `gateway` or `zone-controller` (a segmentation enforcement point) that originates a communication link with no authentication — the bridge forwards traffic across a boundary without authenticating it, weakening segmentation. Distinct from `cross-domain-link-no-filter` (which fires when NEITHER endpoint is a gateway/zone, i.e. a missing filter); this fires precisely when the bridging node IS the gateway/zone but its link is unauthenticated (a filter present but not authenticating). | elevation-of-privilege / CWE-306 |
+| `reachable-debug-port.yaml` | In-scope asset that originates a communication link tagged `physical` with no authentication — a hardware debug/test interface (JTAG/UART) left reachable without an authenticated secure-debug unlock. Distinct from `reachable-unauthenticated-diagnostics` (logical OBD-II/DoIP/UDS surface); this covers the silicon-level hardware debug surface. | elevation-of-privilege / CWE-1191 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -69,13 +71,25 @@ be confirmed to fire on the intended asset and skip the controls:
   internet-encryption rule. Negative controls for the cross-domain rule: `telematics-unit`
   (its only safety-ward link goes THROUGH the `chassis-zone-controller`, a gatewayed hop)
   and `safe-chassis-gateway` (source itself is a gateway) must NOT fire.
+- `chassis-zone-controller` (tagged `zone-controller`/`gateway`) also fires
+  `unauthenticated-gateway-bridge`: a segmentation point originating a no-auth link.
+  `safe-chassis-gateway` is the negative control — its bridging link uses
+  `authentication: credentials`, so it must NOT fire.
+- `debug-interface` — in-scope ECU originating a `physical`-tagged no-auth JTAG/UART debug
+  link → fires `reachable-debug-port`. `secure-debug-port` is the negative control: its
+  `physical`-tagged debug link requires `authentication: client-certificate` (an
+  authenticated secure-debug unlock), so it must NOT fire. Both carry only the `physical`
+  link tag (no fieldbus/diagnostic tag), so they do not trip the safety-bus, SecOC, or
+  diagnostics rules.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
 `reachable-unauthenticated-diagnostics` -> `obd-tester` only; `missing-secoc-on-safety-bus`
 -> `chassis-zone-controller`, `token-auth-zone`, `rogue-telematics` (skips
 `safe-chassis-gateway`); `cross-domain-link-no-filter` -> `rogue-telematics` only (skips
-`telematics-unit` and `safe-chassis-gateway`).
+`telematics-unit` and `safe-chassis-gateway`); `unauthenticated-gateway-bridge` ->
+`chassis-zone-controller` only (skips `safe-chassis-gateway`); `reachable-debug-port` ->
+`debug-interface` only (skips `secure-debug-port`).
 
 ## Caveat (still applies)
 
@@ -87,8 +101,11 @@ and harness-validated only. For findings that must ship in the report, emit them
 
 `unencrypted-ota-channel` and `iso15118-server-only-tls` are deferred: both hinge on
 fields not represented in our parsed model (an OTA-update flag / per-link directionality
-of TLS), so they would require inventing fields outside the tag vocabulary. A
-`reachable-debug-port` rule is effectively covered by
-`reachable-unauthenticated-diagnostics` (OBD-II/DoIP). A
+of TLS), so they would require inventing fields outside the tag vocabulary. An
 `internet-exposed-ecu-no-secure-boot` rule is dropped because secure-boot is not modeled
 (per the no-invented-fields constraint).
+
+`reachable-debug-port` (hardware JTAG/UART debug surface, modeled via the `physical` link
+tag) is now authored as a distinct rule from `reachable-unauthenticated-diagnostics`
+(logical OBD-II/DoIP/UDS surface); the two cover different attack surfaces and do not
+overlap on the fixture.

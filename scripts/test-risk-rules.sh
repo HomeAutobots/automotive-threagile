@@ -31,6 +31,8 @@ internet-exposed-ecu-unencrypted|internet-exposed-ecu-unencrypted@telematics-uni
 reachable-unauthenticated-diagnostics|reachable-unauthenticated-diagnostics@obd-tester|
 missing-secoc-on-safety-bus|missing-secoc-on-safety-bus@token-auth-zone|safe-chassis-gateway
 cross-domain-link-no-filter|cross-domain-link-no-filter@rogue-telematics|telematics-unit
+unauthenticated-gateway-bridge|unauthenticated-gateway-bridge@chassis-zone-controller|safe-chassis-gateway
+reachable-debug-port|reachable-debug-port@debug-interface|secure-debug-port
 "
 
 fail=0

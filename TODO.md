@@ -16,10 +16,11 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
       (also catches non-SecOC auth). Harness-validated + CI-enforced.
 - [x] `cross-domain-link-no-filter` — exposed-domain source linking directly to safety without
       an authenticated gateway/zone in between. Harness-validated + CI-enforced.
-- [ ] `unauthenticated-gateway-bridge` — gateway/zone-controller bridging domains over an
-      `auth=none` link.
-- [ ] `reachable-debug-port` — exposed JTAG/UART/debug interface (now modelable: a `physical`
-      debug-port asset exists). Distinct from `reachable-unauthenticated-diagnostics` (OBD/DoIP).
+- [x] `unauthenticated-gateway-bridge` — gateway/zone-controller originating an `auth=none`
+      bridging link. Harness-validated + CI-enforced.
+- [x] `reachable-debug-port` — in-scope asset with a `physical`-tagged unauthenticated debug
+      (JTAG/UART) link; distinct from `reachable-unauthenticated-diagnostics` (OBD/DoIP).
+      Harness-validated + CI-enforced.
 - [ ] `unencrypted-ota-channel` — *deferred:* needs an OTA-update flag not in the model.
 - [ ] `iso15118-server-only-tls` — *deferred:* needs per-link TLS directionality not modeled.
 - [ ] `internet-exposed-ecu-no-secure-boot` — *deferred:* secure-boot is not modeled.

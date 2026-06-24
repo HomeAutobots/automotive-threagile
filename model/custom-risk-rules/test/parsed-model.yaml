@@ -34,6 +34,18 @@ business_criticality: mission-critical
 #   - telematics-unit         : connectivity source whose only safety-ward link
 #                               goes THROUGH a zone-controller -> must NOT fire
 #   - safe-chassis-gateway    : link source IS a gateway -> must NOT fire
+#
+#   unauthenticated-gateway-bridge (gateway/zone forwards traffic unauthenticated):
+#   - chassis-zone-controller : zone-controller originating a no-auth CAN-FD link
+#                               -> fires (segmentation point not authenticating)
+#   - safe-chassis-gateway    : gateway whose bridging link uses auth CREDENTIALS
+#                               -> must NOT fire (negative control)
+#
+#   reachable-debug-port (exposed unauth JTAG/UART, modeled with `physical` tag):
+#   - debug-interface         : in-scope ECU originating a `physical`-tagged
+#                               no-auth debug link -> fires
+#   - secure-debug-port       : in-scope asset whose `physical`-tagged debug link
+#                               requires client-certificate auth -> must NOT fire
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -424,3 +436,81 @@ technical_assets:
               authorization: none
               data_assets_sent:
                 - telematics-telemetry
+    debug-interface:
+        id: debug-interface
+        title: HPC Debug Interface (JTAG/UART)
+        description: In-scope compute node exposing an unauthenticated on-chip debug (JTAG/UART) interface left reachable in production.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: operational
+        justification_cia_rating: |
+            On-chip debug access enables firmware extraction and arbitrary code execution.
+        tags:
+            - ecu
+            - chassis
+            - physical
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: debug-interface>jtag
+              source_id: debug-interface
+              target_id: brake-actuator-ecu
+              title: JTAG/UART Debug Access (UNAUTHENTICATED)
+              description: Hardware debug/test interface left reachable without authentication.
+              protocol: unknown-protocol
+              tags:
+                - physical
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - diagnostic-data
+              data_assets_received:
+                - diagnostic-data
+    secure-debug-port:
+        id: secure-debug-port
+        title: Hardened Debug Port (negative control)
+        description: In-scope node whose physical debug interface requires authentication (secure debug unlock); must NOT trigger.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: operational
+        justification_cia_rating: |
+            Debug interface gated by an authenticated secure-debug unlock (negative control).
+        tags:
+            - ecu
+            - body
+            - physical
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: secure-debug-port>jtag
+              source_id: secure-debug-port
+              target_id: steering-ecu
+              title: JTAG/UART Debug Access (authenticated unlock)
+              description: Hardware debug interface gated by a client-certificate secure-debug unlock.
+              protocol: unknown-protocol
+              tags:
+                - physical
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - diagnostic-data
+              data_assets_received:
+                - diagnostic-data

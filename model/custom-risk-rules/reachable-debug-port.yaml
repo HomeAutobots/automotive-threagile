@@ -1,0 +1,99 @@
+id: reachable-debug-port
+title: Reachable Unauthenticated Hardware Debug Port (JTAG/UART)
+function: architecture
+stride: elevation-of-privilege
+cwe: 1191
+description:
+  On-chip debug and test interfaces (JTAG, SWD, UART consoles) give direct, low-level access
+  to a controller, halting the core, reading and writing memory, extracting firmware and
+  keys, and bypassing secure boot. In this model such an interface is represented as a
+  communication link tagged physical. This rule flags an in-scope asset that is on either
+  end of a physical-tagged debug link that carries no authentication, i.e. a JTAG/UART debug
+  port left reachable without an authenticated secure-debug unlock. Distinct from
+  reachable-unauthenticated-diagnostics, which covers the logical OBD-II / DoIP (UDS)
+  surface; this rule covers the silicon-level hardware debug surface. Maps to MITRE ATT&CK
+  for ICS T0839 "Module Firmware" / Enterprise T1542 "Pre-OS Boot" and Auto-ISAC ATM
+  "Physical Access to ECU" / "Extract Firmware via Debug Interface".
+impact:
+  If this risk is unmitigated, an attacker with physical (or in-vehicle proximate) access to
+  the debug port can extract firmware and secrets, modify code, disable secure boot, and use
+  the controller as a durable foothold to pivot onto in-vehicle networks.
+asvs:
+  V2 - Authentication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action:
+  Authenticated / Disabled Debug Interfaces
+mitigation:
+  Disable or fuse off production debug interfaces, or gate them behind an authenticated
+  secure-debug unlock (challenge-response with per-device keys) and a hardware root of trust.
+  Do not model a debug link as authentication "none" once a secure-debug unlock is designed
+  in. Where a debug header must remain, restrict physical access and log unlock attempts.
+check:
+  Does every physical-tagged hardware debug/test interface (JTAG/UART) require an
+  authenticated unlock (i.e. not authentication "none"), or is it disabled in production?
+detection_logic:
+  In-scope technical assets that originate, or are the target of, a communication link
+  tagged physical whose authentication is absent/"none" (not a real method). Because
+  zero-value enums are dropped in the parsed model, authentication is treated as absent
+  unless the link declares a real method (credentials, session-id, token, client-certificate,
+  two-factor, externalized).
+risk_assessment:
+  The risk rating depends on the sensitivity of the controller and what is reachable from
+  it; a debug port on a safety-relevant compute node is high severity.
+false_positives:
+  Debug links gated by an authenticated secure-debug unlock (modeled with an authentication
+  value other than "none") or that are physically fused off in production are false
+  positives.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Reachable Unauthenticated Hardware Debug Port</b> at <b>{tech_asset.title}</b>: a physical JTAG/UART debug link carries no authentication"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # link carries no real authentication method (none == absent)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: externalized
+                  # link is a hardware debug/test interface (physical)
+                  - contains:
+                      item: physical
+                      in: "{link.tags}"
+          then:
+            return: true
