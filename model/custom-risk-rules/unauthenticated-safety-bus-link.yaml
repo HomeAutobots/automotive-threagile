@@ -1,0 +1,121 @@
+id: unauthenticated-safety-bus-link
+title: Unauthenticated Safety-Critical Fieldbus Link
+function: architecture
+stride: tampering
+cwe: 306
+description:
+  In-vehicle fieldbuses (CAN, CAN FD, LIN, FlexRay) provide no native message
+  authentication. When an unauthenticated fieldbus link reaches a safety-critical
+  actuation asset (brake-by-wire, steer-by-wire, BMS, inverter, VCU), any node able to
+  place frames on that segment can forge actuation commands. This corresponds to
+  spoofing/tampering of in-vehicle network messages
+  (MITRE ATT&CK for ICS T0855 "Unauthorized Command Message" and T0843 "Modify
+  Program"; Auto-ISAC ATM "Manipulate In-Vehicle Network Messaging").
+impact:
+  If this risk is unmitigated, an attacker with any foothold on the bus segment (a
+  compromised ECU, a malicious diagnostic device, or a bridged zone controller) can
+  inject crafted frames that command unintended actuation of a safety-critical function,
+  directly endangering vehicle occupants and other road users.
+asvs:
+  V2 - Authentication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action:
+  In-Vehicle Message Authentication
+mitigation:
+  Apply AUTOSAR SecOC (or an equivalent message authentication scheme) so that
+  actuation frames carry a freshness value and a truncated MAC keyed per security
+  domain. Where SecOC is infeasible, segment the safety bus behind an authenticating
+  gateway/zone controller, restrict which nodes may transmit safety message IDs, and
+  monitor for anomalous frames. Mark the link authenticated in the model only once a
+  message-authentication scheme is actually designed in.
+check:
+  Does every fieldbus link that reaches a safety-critical asset use SecOC or an
+  equivalent message-authentication mechanism (i.e. not authentication "none")?
+detection_logic:
+  In-scope technical assets that originate at least one communication link tagged with a
+  fieldbus (can, can-fd, lin, flexray) that carries no authentication, where either the
+  link's target asset or the originating asset itself carries the "safety-critical" tag.
+  Authentication is treated as absent unless the link declares a real method
+  (credentials, session-id, token, client-certificate, two-factor, externalized).
+risk_assessment:
+  The risk rating depends on the integrity and availability sensitivity of the
+  safety-critical asset and the data assets carried on the bus. Safety-critical
+  actuation is rated mission-critical, so these findings are high severity.
+false_positives:
+  Links protected by SecOC or equivalent (model them with an authentication value other
+  than "none") are false positives. Diagnostic-only buses with no actuation reachable
+  may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>{tech_asset.title}</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # link carries no real authentication method (none == absent)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: externalized
+                  # link rides a fieldbus
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      or:
+                        - equal:
+                            first: "{link_tag}"
+                            second: can
+                        - equal:
+                            first: "{link_tag}"
+                            second: can-fd
+                        - equal:
+                            first: "{link_tag}"
+                            second: lin
+                        - equal:
+                            first: "{link_tag}"
+                            second: flexray
+                  # the originating asset or the link target is safety-critical
+                  - or:
+                      - contains:
+                          item: safety-critical
+                          in: "{tech_asset.tags}"
+                      - contains:
+                          item: safety-critical
+                          in: "{$model.technical_assets.{link.target_id}.tags}"
+          then:
+            return: true

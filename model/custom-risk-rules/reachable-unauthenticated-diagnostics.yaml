@@ -1,0 +1,104 @@
+id: reachable-unauthenticated-diagnostics
+title: Reachable Unauthenticated Diagnostics / Flashing Surface
+function: architecture
+stride: elevation-of-privilege
+cwe: 1188
+description:
+  Vehicle diagnostic and reprogramming services (UDS over OBD-II or DoIP) expose
+  powerful routines such as ECU reset, security-access seed/key exchange, routine
+  control, and firmware download.
+  When a diagnostic link carries no authentication, anyone who can reach the
+  OBD-II port or the DoIP endpoint (a workshop dongle, an aftermarket device, or a node
+  pivoting from another bus) can enter privileged diagnostic sessions and flash ECUs.
+  This maps to MITRE ATT&CK for ICS T0859 "Valid Accounts" / T0843 "Modify Program" and
+  Auto-ISAC ATM "Exploit Diagnostic Services" and "Reprogram ECU".
+impact:
+  If this risk is unmitigated, an attacker can change ECU configuration or install
+  malicious firmware, disable safety functions, clear diagnostic trouble codes to hide
+  activity, or unlock further functionality, gaining durable control over the vehicle.
+asvs:
+  V2 - Authentication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action:
+  Authenticated Diagnostics and Secure Flashing
+mitigation:
+  Require strong UDS Security Access (challenge-response with per-ECU keys, not legacy
+  fixed seed/key), gate DoIP behind mutual TLS, restrict diagnostic sessions to
+  authenticated tools, and enforce signed/verified firmware for any flashing routine.
+  Rate-limit and log security-access attempts. Do not model a diagnostic link as
+  authentication "none" once Security Access / mTLS is designed in.
+check:
+  Do all OBD-II and DoIP diagnostic/flashing links require authentication (UDS Security
+  Access and/or mutual TLS), i.e. not authentication "none"?
+detection_logic:
+  In-scope technical assets that originate at least one communication link tagged obd-ii
+  or doip that carries no authentication. Authentication is treated as absent unless the
+  link declares a real method (credentials, session-id, token, client-certificate,
+  two-factor, externalized).
+risk_assessment:
+  The risk rating depends on which ECUs are reachable for reprogramming through the
+  diagnostic surface; flashing access to safety-critical ECUs is high severity.
+false_positives:
+  Diagnostic links that enforce UDS Security Access or mutual TLS (modeled with an
+  authentication value other than "none") are false positives. Read-only telemetry-style
+  links that cannot enter programming sessions may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Reachable Unauthenticated Diagnostics</b> at <b>{tech_asset.title}</b>: an OBD-II/DoIP diagnostic link carries no authentication"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # link carries no real authentication method (none == absent)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: externalized
+                  # link is a diagnostic/flashing surface
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      or:
+                        - equal:
+                            first: "{link_tag}"
+                            second: obd-ii
+                        - equal:
+                            first: "{link_tag}"
+                            second: doip
+          then:
+            return: true

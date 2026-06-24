@@ -1,0 +1,333 @@
+threagile_version: 1.0.0
+title: Automotive BEV Custom-Rule Test Fixture
+author:
+    name: Threat Modeler
+date: "2026-06-23"
+business_criticality: mission-critical
+# ---------------------------------------------------------------------------
+# Minimal PARSED-format fixture (NOT the input format) used only to exercise
+# the custom automotive YAML risk rules with the cmd/script harness.
+#
+# It deliberately includes positive cases AND negative controls:
+#   - brake-actuator-ecu : safety-critical ECU reached by an UNAUTHENTICATED
+#                          CAN-FD link  -> SHOULD trigger unauthenticated-safety-bus
+#   - steering-ecu       : safety-critical ECU reached by an AUTHENTICATED
+#                          (client-certificate) link -> must NOT trigger
+#   - telematics-unit    : internet-exposed telematics, encryption none
+#                          -> SHOULD trigger internet-exposed-ecu-unencrypted
+#   - body-gateway       : has an UNAUTHENTICATED doip diagnostic link
+#                          -> SHOULD trigger reachable-unauthenticated-diagnostics
+#   - obd-tester         : has an UNAUTHENTICATED obd-ii link
+#                          -> SHOULD trigger reachable-unauthenticated-diagnostics
+# ---------------------------------------------------------------------------
+data_assets:
+    vehicle-control-commands:
+        id: vehicle-control-commands
+        title: Vehicle Control Commands
+        description: Actuation commands on the safety bus (brake, steer, torque).
+        usage: business
+        origin: OEM
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Tampering with actuation commands directly endangers vehicle occupants.
+    telematics-telemetry:
+        id: telematics-telemetry
+        title: Telematics Telemetry
+        description: Vehicle telemetry and remote-command traffic over cellular.
+        usage: business
+        origin: OEM
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Telemetry contains location and vehicle-state data; remote commands are sensitive.
+    diagnostic-data:
+        id: diagnostic-data
+        title: Diagnostic / Flashing Data
+        description: UDS diagnostic sessions and firmware flashing payloads.
+        usage: devops
+        origin: OEM
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: operational
+        justification_cia_rating: |
+            Diagnostic/flashing access enables arbitrary firmware modification.
+technical_assets:
+    brake-actuator-ecu:
+        id: brake-actuator-ecu
+        title: Brake Actuator ECU
+        description: Brake-by-wire actuation ECU on the chassis CAN-FD bus.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Safety-critical actuation; loss of integrity endangers occupants.
+        tags:
+            - ecu
+            - chassis
+            - safety-critical
+            - can-fd
+        data_assets_processed:
+            - vehicle-control-commands
+    steering-ecu:
+        id: steering-ecu
+        title: Steering Actuator ECU
+        description: Steer-by-wire ECU reached over an authenticated (SecOC-style) link.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Safety-critical actuation; this link is authenticated (negative control).
+        tags:
+            - ecu
+            - chassis
+            - safety-critical
+            - can-fd
+        data_assets_processed:
+            - vehicle-control-commands
+    chassis-zone-controller:
+        id: chassis-zone-controller
+        title: Chassis Zone Controller
+        description: Zone controller bridging chassis CAN-FD segments; sends UNAUTHENTICATED brake commands.
+        type: process
+        size: component
+        technologies:
+            - name: gateway
+              description: In-vehicle gateway
+              attributes:
+                gateway: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: critical
+        justification_cia_rating: |
+            Routes safety-relevant traffic between chassis ECUs.
+        tags:
+            - zone-controller
+            - gateway
+            - chassis
+            - can-fd
+        data_assets_processed:
+            - vehicle-control-commands
+        communication_links:
+            - id: chassis-zc>brake-cmd
+              source_id: chassis-zone-controller
+              target_id: brake-actuator-ecu
+              title: Brake Command (CAN-FD, UNAUTHENTICATED)
+              description: Actuation command frames toward the safety-critical brake ECU.
+              protocol: unknown-protocol
+              tags:
+                - can-fd
+                - chassis
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - vehicle-control-commands
+    safe-chassis-gateway:
+        id: safe-chassis-gateway
+        title: Hardened Chassis Gateway (negative control)
+        description: Sends AUTHENTICATED CAN-FD commands to a safety-critical ECU; must NOT trigger.
+        type: process
+        size: component
+        technologies:
+            - name: gateway
+              description: In-vehicle gateway
+              attributes:
+                gateway: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: critical
+        justification_cia_rating: |
+            Hardened gateway applying message authentication on the safety bus.
+        tags:
+            - zone-controller
+            - gateway
+            - chassis
+            - can-fd
+        data_assets_processed:
+            - vehicle-control-commands
+        communication_links:
+            - id: safe-gw>steer-cmd
+              source_id: safe-chassis-gateway
+              target_id: steering-ecu
+              title: Steering Command (CAN-FD, authenticated)
+              description: Authenticated actuation command frames (negative control).
+              protocol: unknown-protocol
+              tags:
+                - can-fd
+                - chassis
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - vehicle-control-commands
+    telematics-unit:
+        id: telematics-unit
+        title: Telematics Control Unit (TCU)
+        description: Cellular-connected telematics unit, internet exposed, unencrypted backhaul.
+        type: process
+        size: application
+        technologies:
+            - name: telematics
+              description: Telematics control unit
+              attributes:
+                telematics: true
+        machine: physical
+        internet: true
+        encryption: none
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Internet-facing remote-access surface for the vehicle.
+        tags:
+            - ecu
+            - telematics
+            - connectivity
+            - cellular
+        data_assets_processed:
+            - telematics-telemetry
+        communication_links:
+            - id: telematics-unit>cloud
+              source_id: telematics-unit
+              target_id: chassis-zone-controller
+              title: Internal vehicle bus link
+              description: Forwards remote commands onto the in-vehicle network.
+              protocol: unknown-protocol
+              tags:
+                - can
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - telematics-telemetry
+    body-gateway:
+        id: body-gateway
+        title: Body Domain Gateway
+        description: Body domain gateway exposing a DoIP diagnostic endpoint.
+        type: process
+        size: component
+        technologies:
+            - name: gateway
+              description: In-vehicle gateway
+              attributes:
+                gateway: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: critical
+        justification_cia_rating: |
+            Central routing node; diagnostic endpoint enables flashing.
+        tags:
+            - gateway
+            - body
+            - doip
+            - ethernet
+        data_assets_processed:
+            - diagnostic-data
+    obd-tester:
+        id: obd-tester
+        title: OBD-II Tester
+        description: External diagnostic tester plugged into the OBD-II port.
+        type: external-entity
+        size: component
+        technologies:
+            - name: tool
+              description: Diagnostic tool
+              attributes:
+                tool: true
+        machine: physical
+        owner: Workshop
+        confidentiality: confidential
+        integrity: critical
+        availability: operational
+        justification_cia_rating: |
+            Physical diagnostic access point; an unauthenticated bus is a flashing surface.
+        tags:
+            - obd-ii
+            - physical
+            - external
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: obd-tester>powertrain-obd
+              source_id: obd-tester
+              target_id: chassis-zone-controller
+              title: OBD-II Diagnostic Access
+              description: Unauthenticated OBD-II diagnostic/flashing link.
+              protocol: unknown-protocol
+              tags:
+                - obd-ii
+                - can
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - diagnostic-data
+              data_assets_received:
+                - diagnostic-data
+            - id: obd-tester>body-gw-doip
+              source_id: obd-tester
+              target_id: body-gateway
+              title: DoIP Diagnostic Session
+              description: Unauthenticated DoIP/UDS diagnostic session.
+              protocol: unknown-protocol
+              tags:
+                - doip
+                - ethernet
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - diagnostic-data
+              data_assets_received:
+                - diagnostic-data
+    infotainment-offline:
+        id: infotainment-offline
+        title: Offline Infotainment Bench Unit
+        description: Infotainment unit, not internet exposed (negative control for internet rule).
+        type: process
+        size: application
+        technologies:
+            - name: infotainment
+              description: In-vehicle infotainment
+              attributes:
+                infotainment: true
+        machine: physical
+        internet: false
+        encryption: none
+        owner: OEM
+        confidentiality: confidential
+        integrity: important
+        availability: important
+        justification_cia_rating: |
+            Bench unit with no external connectivity (must NOT trigger internet rule).
+        tags:
+            - ecu
+            - infotainment
+        data_assets_processed:
+            - telematics-telemetry

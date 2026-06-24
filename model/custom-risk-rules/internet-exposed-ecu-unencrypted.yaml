@@ -1,0 +1,96 @@
+id: internet-exposed-ecu-unencrypted
+title: Internet-Exposed Vehicle ECU Without Encryption
+function: architecture
+stride: information-disclosure
+cwe: 319
+description:
+  Connected vehicle components that face the internet or RF networks (telematics control
+  units, infotainment head units, connectivity modules) are the primary remote attack
+  surface of the vehicle. When such an asset stores or processes data without encryption
+  (encryption "none"), telemetry, location, credentials, and remote-command traffic are
+  exposed to interception and tampering. This maps to MITRE ATT&CK T1040 "Network
+  Sniffing" / Mobile T1439, and Auto-ISAC ATM "Intercept Vehicle Communications" and
+  "Remote Vehicle Access via Telematics".
+impact:
+  If this risk is unmitigated, an attacker positioned on the cellular/Wi-Fi/cloud path
+  (or who compromises the unit) can read or alter sensitive vehicle and user data in
+  transit or at rest, and may pivot the remote channel toward in-vehicle networks.
+asvs:
+  V9 - Communication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
+action:
+  Encryption of Connected-Vehicle Data
+mitigation:
+  Terminate all external connectivity over TLS with certificate pinning and mutual
+  authentication, and encrypt sensitive data at rest on the unit. For OEM backends use
+  IPsec or TLS with hardware-backed key storage (HSM/SE). Do not mark the asset
+  "encryption none" unless it genuinely handles no sensitive data.
+check:
+  Do all internet/RF-exposed ECUs (telematics, infotainment, connectivity) encrypt
+  sensitive data in transit and at rest (i.e. not encryption "none")?
+detection_logic:
+  In-scope technical assets with internet exposure (internet true), tagged ecu,
+  telematics, or infotainment, whose encryption is not set to a real encryption style
+  (treated as "none"/absent).
+risk_assessment:
+  The risk rating depends on the confidentiality and integrity of the data processed and
+  the reachability of the asset. Internet-facing assets handling vehicle/user data are
+  rated medium-to-high.
+false_positives:
+  Assets that face the internet but process only public, non-sensitive data, or that
+  delegate all encryption to a transparent lower layer modeled elsewhere, can be
+  reviewed as false positives.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Internet-Exposed Vehicle ECU Without Encryption</b> at <b>{tech_asset.title}</b>: an internet-facing ECU processes data without encryption"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            # encryption is not a real style (none == absent)
+            - not-equal:
+                first: "{tech_asset.encryption}"
+                second: transparent
+            - not-equal:
+                first: "{tech_asset.encryption}"
+                second: data-with-symmetric-shared-key
+            - not-equal:
+                first: "{tech_asset.encryption}"
+                second: data-with-asymmetric-shared-key
+            - not-equal:
+                first: "{tech_asset.encryption}"
+                second: data-with-enduser-individual-key
+            # connected-vehicle ECU class
+            - any:
+                in: "{tech_asset.tags}"
+                item: asset_tag
+                or:
+                  - equal:
+                      first: "{asset_tag}"
+                      second: ecu
+                  - equal:
+                      first: "{asset_tag}"
+                      second: telematics
+                  - equal:
+                      first: "{asset_tag}"
+                      second: infotainment
+          then:
+            return: true
