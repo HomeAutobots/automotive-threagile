@@ -24,15 +24,16 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 - [ ] `internet-exposed-ecu-no-secure-boot` — *deferred:* secure-boot is not modeled.
 
 ## Model (`model/threagile.yaml`)
-- [ ] Mark **SecOC-authenticated** links where the architecture designs them in (today every
-      bus link defaults to `authentication: none`). Unblocks `missing-secoc-on-safety-bus` and
-      sharpens the analyzer's weakest-auth scoring.
-- [ ] Add deferred assets skipped during build-out: FlexRay / SENT / PSI5 leaf buses, TPMS,
-      passive-keyless LF/UHF, digital-key device, JTAG/UART/debug ports, USB/SD media. These
-      also unblock rules above and fill technique-mapping gaps.
+- [x] Mark **SecOC-authenticated** links — modeled (as `authentication: credentials` +
+      description) on flagship by-wire/propulsion CAN-FD buses (brake, steer, VCU↔inverter,
+      VCU→BMS); other safety buses left unauthenticated by design so the gaps stay visible.
+- [x] Add deferred assets — added JTAG/UART **debug port**, **digital key / key fob**, **TPMS**,
+      a legacy **FlexRay** chassis link/actuator, and **USB/SD media**. *Still deferred:*
+      SENT/PSI5 sensor buses and the NFC digital-key surface (need tags not in the vocabulary —
+      would require expanding the tag vocabulary first).
 - [ ] Model **secure-boot / firmware-signing** (as tags or data-asset relationships) so the
-      related rules become expressible.
-- [ ] Drop the `(SEED)` suffix from the title now that it is a full 32-asset model.
+      related rules become expressible. *(Likely needs a tag-vocabulary addition.)*
+- [x] Drop the `(SEED)` suffix from the title (now `Composite BEV Zonal L3+`).
 
 ## Analyzer (`scripts/attack_path_analyzer.py`)
 - [x] Per-hop ATM + ATT&CK technique tagging.
@@ -57,5 +58,7 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
       re-check whether `includes:` is supported (would simplify the merge in `run-threagile.sh`).
 
 ## Testing / docs
+- [x] `validate-model.sh` rejects duplicate YAML keys (matches Threagile's strict Go parser;
+      PyYAML silently kept the last one).
 - [ ] Broaden the rule test fixture with more negative controls as rules grow.
 - [ ] Add a sample findings summary / report screenshot to the README.
