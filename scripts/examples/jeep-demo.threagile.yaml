@@ -1,0 +1,402 @@
+threagile_version: 1.0.0
+
+title: Jeep-Shaped Vehicle (Multi-Hop Demo)
+date: 2025-06-22
+author:
+  name: Threat Model Demo
+  homepage: example.com
+
+management_summary_comment: >
+  Minimal vehicle EE model shaped after the 2015 Jeep Cherokee remote-exploit
+  chain (cellular -> head unit -> CAN-bridge microcontroller -> safety-critical
+  ECUs). In-vehicle links are authored in the natural telemetry-UP direction;
+  the external graph analyzer derives ATTACKER reachability separately.
+business_criticality: mission-critical # values: archive, operational, important, critical, mission-critical
+
+data_assets:
+
+  CAN Control Messages:
+    id: can-control-messages
+    description: Command frames on the in-vehicle CAN bus (steering, braking, transmission)
+    usage: business
+    tags:
+    origin: Vehicle
+    owner: OEM
+    quantity: many # values: very-few, few, many, very-many
+    confidentiality: internal # values: public, internal, restricted, confidential, strictly-confidential
+    integrity: mission-critical # values: archive, operational, important, critical, mission-critical
+    availability: mission-critical
+    justification_cia_rating: >
+      Tampering with CAN control frames directly affects vehicle safety functions.
+
+  ECU Firmware:
+    id: ecu-firmware
+    description: Firmware images running on in-vehicle ECUs and the CAN bridge
+    usage: devops
+    tags:
+    origin: OEM
+    owner: OEM
+    quantity: few
+    confidentiality: confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: >
+      Unsigned/replaceable firmware enables persistence and pivoting.
+
+  Vehicle Telemetry:
+    id: vehicle-telemetry
+    description: Status/telemetry reported upstream from ECUs to the head unit and cloud
+    usage: business
+    tags:
+    origin: Vehicle
+    owner: OEM
+    quantity: very-many
+    confidentiality: restricted
+    integrity: operational
+    availability: operational
+    justification_cia_rating: >
+      Operational telemetry; lower direct safety impact than control messages.
+
+technical_assets:
+
+  Cellular Network:
+    id: cellular-network
+    description: Public cellular carrier network (remote attacker reachability)
+    type: external-entity # values: external-entity, process, datastore
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: true
+    justification_out_of_scope: Carrier-operated transport, outside the vehicle boundary
+    size: system # values: system, service, application, component
+    technology: gateway # values: see help
+    tags:
+    internet: true
+    machine: physical # values: physical, virtual, container, serverless
+    encryption: none
+    owner: Carrier
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Transport only.
+    multi_tenant: true
+    redundant: true
+    custom_developed_parts: false
+    data_assets_processed:
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Cellular Access:
+        target: head-unit
+        description: Inbound reachability to head unit over cellular (open service port)
+        protocol: text-encrypted # values: see help
+        authentication: none # values: none, credentials, session-id, token, client-certificate, two-factor
+        authorization: none # values: none, technical-user, enduser-identity-propagation
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+        data_assets_received:
+          - vehicle-telemetry
+
+  Head Unit (IVI):
+    id: head-unit
+    description: Uconnect-style infotainment head unit application processor (OMAP)
+    type: process
+    usage: business
+    used_as_client_by_human: true
+    out_of_scope: false
+    justification_out_of_scope:
+    size: application
+    technology: web-application # runs network services; reachable from cellular
+    tags:
+      - infotainment
+      - connectivity
+      - telematics
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: important
+    justification_cia_rating: >
+      Internet-exposed in-vehicle compute node; the remote foothold.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - vehicle-telemetry
+    data_assets_stored:
+    data_formats_accepted:
+      - json
+    communication_links:
+      Aggregated Telemetry Upload:
+        target: cellular-network
+        description: Head unit reports vehicle telemetry to the cloud over cellular
+        protocol: https
+        authentication: client-certificate
+        authorization: technical-user
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - vehicle-telemetry
+        data_assets_received:
+
+  CAN Bridge (V850):
+    id: can-bridge
+    description: Renesas V850-style microcontroller bridging head unit (SPI) to CAN
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: gateway
+    tags:
+      - can-bridge
+      - gateway
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: critical
+    justification_cia_rating: >
+      Sole bridge between connectivity domain and the safety CAN bus.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - vehicle-telemetry
+      - can-control-messages
+    data_assets_stored:
+      - ecu-firmware
+    data_formats_accepted:
+    communication_links:
+      SPI Telemetry To Head Unit:
+        target: head-unit
+        description: Bridge forwards aggregated CAN telemetry to head unit over SPI
+        protocol: binary
+        authentication: none # no code signing on bridge firmware (the real enabler)
+        authorization: none
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - vehicle-telemetry
+        data_assets_received:
+
+  Steering ECU:
+    id: steering-ecu
+    description: Power steering control module (PSCM)
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: iot-device
+    tags:
+      - ecu
+      - safety-critical
+      - chassis
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Safety-critical actuator.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - can-control-messages
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Steering Status:
+        target: can-bridge
+        description: Steering status broadcast on CAN
+        protocol: binary
+        authentication: none
+        authorization: none
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - vehicle-telemetry
+        data_assets_received:
+          - can-control-messages
+
+  Brake ECU:
+    id: brake-ecu
+    description: Anti-lock braking system module (ABS)
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: iot-device
+    tags:
+      - ecu
+      - safety-critical
+      - chassis
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Safety-critical actuator.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - can-control-messages
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Brake Status:
+        target: can-bridge
+        description: Brake status broadcast on CAN
+        protocol: binary
+        authentication: none
+        authorization: none
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - vehicle-telemetry
+        data_assets_received:
+          - can-control-messages
+
+  Transmission ECU:
+    id: transmission-ecu
+    description: Transmission control module (TCM)
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: iot-device
+    tags:
+      - ecu
+      - safety-critical
+      - powertrain
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: critical
+    justification_cia_rating: Safety-critical actuator.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - can-control-messages
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Transmission Status:
+        target: can-bridge
+        description: Transmission status broadcast on CAN
+        protocol: binary
+        authentication: none
+        authorization: none
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - vehicle-telemetry
+        data_assets_received:
+          - can-control-messages
+
+  Body Control Module:
+    id: body-ecu
+    description: Body control module (doors, lighting, HVAC) - non-safety
+    type: process
+    usage: business
+    used_as_client_by_human: false
+    out_of_scope: false
+    justification_out_of_scope:
+    size: component
+    technology: iot-device
+    tags:
+      - ecu
+      - body
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: operational
+    justification_cia_rating: Comfort/convenience functions.
+    multi_tenant: false
+    redundant: false
+    custom_developed_parts: true
+    data_assets_processed:
+      - can-control-messages
+    data_assets_stored:
+    data_formats_accepted:
+    communication_links:
+      Body Status:
+        target: can-bridge
+        description: Body status broadcast on CAN
+        protocol: binary
+        authentication: none
+        authorization: none
+        tags:
+        vpn: false
+        ip_filtered: false
+        readonly: false
+        usage: business
+        data_assets_sent:
+          - vehicle-telemetry
+        data_assets_received:
+          - can-control-messages
+
+trust_boundaries:
+
+  Connectivity Domain:
+    id: connectivity-domain
+    description: Internet-exposed connectivity/infotainment domain
+    type: network-virtual-lan # values: see help
+    tags:
+    technical_assets_inside:
+      - head-unit
+    trust_boundaries_nested:
+
+  In-Vehicle CAN Bus:
+    id: in-vehicle-can
+    description: Safety-relevant in-vehicle CAN segment
+    type: network-virtual-lan
+    tags:
+    technical_assets_inside:
+      - can-bridge
+      - steering-ecu
+      - brake-ecu
+      - transmission-ecu
+      - body-ecu
+    trust_boundaries_nested:

@@ -1,0 +1,17 @@
+#!/bin/sh
+# Block direct pushes to main. Use a feature branch + PR, then merge.
+# Interim guard until branch protection can be enabled (repo must be public,
+# or owner on GitHub Pro/Team, for protected branches). See CONTRIBUTING.md.
+# Emergency override: git push --no-verify
+protected="main"
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/"$protected")
+      echo "✗ Direct pushes to '$protected' are blocked." >&2
+      echo "  Push a branch and open a PR:  git switch -c my-change && git push -u origin my-change" >&2
+      echo "  (emergency override: git push --no-verify)" >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0

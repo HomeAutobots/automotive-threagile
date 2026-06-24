@@ -1,0 +1,1086 @@
+threagile_version: 1.0.0
+
+title: Composite BEV Zonal L3+ (SEED)
+date: 2025-06-23
+author:
+  name: automotive-threat-model
+  homepage: example.com
+
+management_summary_comment: >
+  Threat model of a composite (domain + zonal) BEV with SAE L3+ automation, spanning the
+  attack surface from connectivity through gateways/zones to the safety and charging
+  domains. In-vehicle links are authored in the natural telemetry-up direction; multi-hop
+  attacker reachability is computed by scripts/attack_path_analyzer.py.
+business_criticality: mission-critical
+
+# Tag vocabulary. Threagile requires every tag used on an asset or link to be declared here.
+tags_available:
+  - safety-critical
+  - ecu
+  - gateway
+  - zone-controller
+  - connectivity
+  - infotainment
+  - telematics
+  - adas
+  - powertrain
+  - chassis
+  - body
+  - charging
+  - can
+  - can-fd
+  - lin
+  - flexray
+  - ethernet
+  - some-ip
+  - doip
+  - obd-ii
+  - v2x
+  - cellular
+  - bluetooth
+  - uwb
+  - gnss
+  - ota
+  - external
+  - physical
+
+data_assets:
+
+  Safety Control Messages:
+    id: safety-control-messages
+    description: Steering/braking/propulsion/ADAS command frames
+    usage: business
+    quantity: many
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Spoof/withhold = loss of vehicle control.
+
+  ECU Firmware:
+    id: ecu-firmware
+    description: OTA payloads and ECU firmware images
+    usage: devops
+    quantity: few
+    confidentiality: confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Integrity is anti-tamper; protected via Uptane.
+
+  Crypto Material:
+    id: crypto-material
+    description: ECU signing keys, TLS/V2X/ISO15118 certs, SecOC/secure-boot keys
+    usage: devops
+    quantity: few
+    confidentiality: strictly-confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Key compromise breaks all downstream trust.
+
+  ADAS Fusion Data:
+    id: adas-fusion-data
+    description: ADAS/AD perception and sensor-fusion data (camera/radar/lidar/ultrasonic)
+    usage: business
+    quantity: very-many
+    confidentiality: restricted
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Corrupt fusion = unsafe planning/actuation.
+
+  V2X Messages:
+    id: v2x-messages
+    description: V2X BSM/SPaT/MAP messages received over DSRC/C-V2X
+    usage: business
+    quantity: very-many
+    confidentiality: internal
+    integrity: important
+    availability: operational
+    justification_cia_rating: Spoofable RF input influencing AD compute.
+
+  Telematics Location Data:
+    id: telematics-data
+    description: Telematics, location, and driving data
+    usage: business
+    quantity: many
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: Location/driving data is privacy-sensitive.
+
+  PII and Biometric Data:
+    id: pii-data
+    description: Accounts, contacts, payment, biometric DMS data
+    usage: business
+    quantity: many
+    confidentiality: strictly-confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: Biometric/account PII; privacy and fraud impact.
+
+  Charging Billing Data:
+    id: charging-billing-data
+    description: Charging schedule, SoC, ISO 15118 contract creds (EMAID)
+    usage: business
+    quantity: many
+    confidentiality: confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: Billing/contract creds; fraud and abuse impact.
+
+  Diagnostic Data:
+    id: diagnostic-data
+    description: Diagnostic data, UDS sessions, and logs (OBD/DoIP)
+    usage: devops
+    quantity: many
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: Reveals internals; flashing path if abused.
+
+technical_assets:
+
+  OEM Cloud Backend:
+    id: oem-cloud
+    description: Telematics + OTA backend, remote-command and companion-app cloud
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: Off-board; covered by separate cloud assessment.
+    size: system
+    technology: web-application
+    tags: [ota, external]
+    internet: true
+    machine: virtual
+    encryption: transparent
+    owner: OEM
+    confidentiality: confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: Source of OTA + remote commands.
+    communication_links:
+      OTA / Remote Commands:
+        target: tcu
+        description: Cellular link delivering OTA payloads and remote commands
+        protocol: https
+        usage: devops
+        authentication: client-certificate
+        authorization: technical-user
+        tags: [cellular, ota]
+        data_assets_sent: [ecu-firmware]
+        data_assets_received: []
+
+  Telematics Control Unit:
+    id: tcu
+    description: 4G/5G modem, OTA client, remote commands, eCall
+    type: process
+    usage: business
+    size: application
+    technology: gateway
+    tags: [connectivity, telematics, cellular, ota, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: important
+    justification_cia_rating: Internet-exposed; primary remote initial-access asset.
+    data_assets_processed: [ecu-firmware]
+    communication_links:
+      Backbone To Central Gateway:
+        target: central-gateway
+        description: TCU to central gateway over automotive Ethernet
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+        data_assets_sent: []
+        data_assets_received: []
+
+  Infotainment Head Unit:
+    id: ivi
+    description: Cockpit/IVI domain controller, app platform, phone projection
+    type: process
+    usage: business
+    used_as_client_by_human: true
+    size: application
+    technology: web-application
+    tags: [infotainment, connectivity, bluetooth, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: Internet/RF-exposed compute; common foothold.
+    communication_links:
+      IVI To Central Gateway:
+        target: central-gateway
+        description: IVI to central gateway over automotive Ethernet
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+
+  V2X Module:
+    id: v2x-module
+    description: V2X OBU (DSRC / C-V2X); BSM/SPaT/MAP receive, SCMS/C-ITS PKI
+    type: process
+    usage: business
+    size: application
+    technology: iot-device
+    tags: [connectivity, v2x, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: operational
+    justification_cia_rating: RF-exposed; spoofable BSM/SPaT feeds into AD compute.
+    data_assets_processed: [v2x-messages]
+    communication_links:
+      V2X To ADAS Compute:
+        target: adas-compute
+        description: V2X messages forwarded to AD compute over Ethernet/SOME-IP
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+        data_assets_sent: [v2x-messages]
+
+  Wi-Fi Bluetooth Module:
+    id: wifi-bt-module
+    description: Wi-Fi/BLE radio; phone projection, digital key (BLE), companion link
+    type: process
+    usage: business
+    size: application
+    technology: iot-device
+    tags: [connectivity, bluetooth, uwb, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: RF-exposed; BLE relay-prone digital key surface.
+    data_assets_processed: [pii-data]
+    communication_links:
+      Wi-Fi BT To IVI:
+        target: ivi
+        description: Wi-Fi/BLE traffic and projection to IVI
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet]
+        data_assets_sent: [pii-data]
+      Digital Key To Body Controller:
+        target: body-controller
+        description: BLE/UWB digital-key access requests to body domain controller
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can, uwb]
+
+  GNSS Receiver:
+    id: gnss-receiver
+    description: GNSS receiver (RF receive-only); position/time, spoofable
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [connectivity, gnss, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: operational
+    justification_cia_rating: Unauthenticated RF; GNSS spoofing defeats localization.
+    data_assets_processed: [telematics-data]
+    communication_links:
+      GNSS To ADAS Compute:
+        target: adas-compute
+        description: Position/time to AD compute for localization
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can]
+        data_assets_sent: [telematics-data]
+
+  Central Vehicle Computer:
+    id: central-compute
+    description: Central vehicle computer / HPC; consolidated services, hypervisor partitions
+    type: process
+    usage: business
+    size: system
+    technology: application-server
+    tags: [gateway, connectivity]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: confidential
+    integrity: critical
+    availability: critical
+    justification_cia_rating: Consolidated compute hosting mixed-criticality services.
+    data_assets_processed: [ecu-firmware, telematics-data, pii-data]
+    communication_links:
+      HPC To Central Gateway:
+        target: central-gateway
+        description: HPC to central gateway over automotive Ethernet backbone
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+      HPC OTA To Zone Controllers:
+        target: zone-chassis
+        description: OTA firmware distribution to zone controllers
+        protocol: https
+        usage: devops
+        authentication: client-certificate
+        authorization: technical-user
+        tags: [ethernet, some-ip, ota]
+        data_assets_sent: [ecu-firmware]
+
+  ADAS AD Compute:
+    id: adas-compute
+    description: ADAS/AD compute (L3+); perception fusion, planning (ASIL D decomposed)
+    type: process
+    usage: business
+    size: system
+    technology: application-server
+    tags: [adas, safety-critical]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: confidential
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Planning/actuation authority; consumes V2X/GNSS/sensor data.
+    data_assets_processed: [adas-fusion-data, v2x-messages, safety-control-messages]
+    communication_links:
+      ADAS To Central Gateway:
+        target: central-gateway
+        description: AD compute to central gateway over Ethernet/SOME-IP
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+        data_assets_sent: [safety-control-messages]
+
+  Central Gateway:
+    id: central-gateway
+    description: Central routing + firewall between connectivity and safety domains
+    type: process
+    usage: business
+    size: component
+    technology: gateway
+    tags: [gateway]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: critical
+    justification_cia_rating: Enforcement point between exposure and safety domains.
+    communication_links:
+      To Chassis Zone Controller:
+        target: zone-chassis
+        description: Backbone link to chassis zone controller
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet]
+      To Front Zone Controller:
+        target: zone-front
+        description: Backbone link to front zone controller
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+      To Rear Zone Controller:
+        target: zone-rear
+        description: Backbone link to rear zone controller
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+      Diagnostics To Gateway:
+        target: zone-chassis
+        description: DoIP diagnostic/flashing path routed to zones
+        protocol: text
+        usage: devops
+        authentication: credentials
+        authorization: technical-user
+        tags: [ethernet, doip]
+        data_assets_sent: [diagnostic-data]
+
+  Chassis Zone Controller:
+    id: zone-chassis
+    description: Zone controller aggregating chassis ECUs; CAN<->Ethernet routing
+    type: process
+    usage: business
+    size: component
+    technology: gateway
+    tags: [zone-controller, chassis, gateway]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Routes safety-critical chassis traffic.
+    communication_links:
+      To Brake ECU:
+        target: brake-ecu
+        description: CAN FD to brake-by-wire ECU
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+      To Steering ECU:
+        target: steering-ecu
+        description: CAN FD to steer-by-wire ECU
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+
+  Front Zone Controller:
+    id: zone-front
+    description: Front zone controller; power distribution + CAN/LIN<->Ethernet routing
+    type: process
+    usage: business
+    size: component
+    technology: gateway
+    tags: [zone-controller, gateway, body]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: critical
+    availability: critical
+    justification_cia_rating: Aggregates front-zone sensors/actuators and powertrain leafs.
+    communication_links:
+      To VCU:
+        target: vcu
+        description: CAN FD to vehicle control unit
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+      To Inverter:
+        target: inverter
+        description: CAN FD to inverter / motor control unit
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+      To Airbag Control:
+        target: airbag-ecu
+        description: CAN FD to airbag/restraint control module
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+      To Front Camera:
+        target: camera-front
+        description: Automotive Ethernet to front camera
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet]
+        data_assets_received: [adas-fusion-data]
+      To Front Radar:
+        target: radar-front
+        description: CAN FD / Ethernet to front radar
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_received: [adas-fusion-data]
+      To Lidar:
+        target: lidar
+        description: Automotive Ethernet to lidar
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet]
+        data_assets_received: [adas-fusion-data]
+
+  Rear Zone Controller:
+    id: zone-rear
+    description: Rear zone controller; power distribution + CAN/LIN<->Ethernet routing
+    type: process
+    usage: business
+    size: component
+    technology: gateway
+    tags: [zone-controller, gateway, body]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: critical
+    availability: critical
+    justification_cia_rating: Aggregates rear-zone body/charging/sensor leafs.
+    communication_links:
+      To Body Controller:
+        target: body-controller
+        description: CAN to body domain controller
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can]
+      To DC-DC Converter:
+        target: dcdc-converter
+        description: CAN FD to DC-DC converter controller
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+      To On-Board Charger:
+        target: obc
+        description: CAN FD to on-board charger
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+      To Rear Ultrasonic:
+        target: ultrasonic
+        description: LIN to ultrasonic park sensors
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [lin]
+        data_assets_received: [adas-fusion-data]
+      To Rear Camera:
+        target: camera-rear
+        description: Automotive Ethernet to rear camera
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet]
+        data_assets_received: [adas-fusion-data]
+
+  Brake ECU:
+    id: brake-ecu
+    description: Brake-by-wire / ESC / ABS (ASIL D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, chassis]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Safety-critical actuator.
+    data_assets_processed: [safety-control-messages]
+
+  Steering ECU:
+    id: steering-ecu
+    description: Steer-by-wire / EPS (ASIL D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, chassis]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Safety-critical actuator; no mechanical fallback in SbW.
+    data_assets_processed: [safety-control-messages]
+
+  Vehicle Control Unit:
+    id: vcu
+    description: Vehicle control unit; torque/drive coordination (ASIL C/D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, powertrain]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Coordinates propulsion; safety-critical actuation authority.
+    data_assets_processed: [safety-control-messages]
+    communication_links:
+      VCU To Inverter:
+        target: inverter
+        description: CAN FD torque commands to inverter
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+      VCU To BMS:
+        target: bms
+        description: CAN FD to BMS for power/SoC limits
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+
+  Inverter Motor Control:
+    id: inverter
+    description: Inverter / motor control unit(s) (ASIL C/D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, powertrain]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Drives traction motor; safety-critical actuator.
+    data_assets_processed: [safety-control-messages]
+
+  DC-DC Converter:
+    id: dcdc-converter
+    description: DC-DC converter controller; HV->LV supply (ASIL B/C)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, powertrain]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: critical
+    justification_cia_rating: Supplies LV rail; loss degrades vehicle electronics.
+
+  Airbag Control Module:
+    id: airbag-ecu
+    description: Airbag / restraint control module (ASIL D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, chassis]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Restraint actuation; unintended deployment is safety-critical.
+    data_assets_processed: [safety-control-messages]
+
+  Charge Port Controller:
+    id: charge-controller
+    description: EVCC — ISO 15118 Plug & Charge, CCS PLC, EVSE handshake
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [charging, ecu, external]
+    internet: true
+    machine: physical
+    encryption: transparent
+    owner: OEM
+    confidentiality: confidential
+    integrity: critical
+    availability: important
+    justification_cia_rating: Terminates external charging interface; holds contract certs.
+    data_assets_processed: [crypto-material]
+    communication_links:
+      To Battery Management System:
+        target: bms
+        description: Charging V/I and limits to BMS over CAN
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can]
+
+  Battery Management System:
+    id: bms
+    description: Cell monitoring/balancing, contactor control, charge limits (ASIL C/D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, powertrain, charging]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: critical
+    justification_cia_rating: HV safety; thermal/insulation protection.
+    data_assets_processed: [safety-control-messages]
+
+  On-Board Charger:
+    id: obc
+    description: On-board charger; AC->DC conversion, charge control (ASIL B/C)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, charging]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: important
+    justification_cia_rating: Controls AC charging path; faults affect HV safety.
+    communication_links:
+      OBC To BMS:
+        target: bms
+        description: CAN FD charge V/I and limits to BMS
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+
+  Body Domain Controller:
+    id: body-controller
+    description: Body domain controller / BCM; doors, lighting, climate, access (QM-B)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, body]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: operational
+    justification_cia_rating: Controls access/comfort; entry path via digital key relay.
+    communication_links:
+      To Window Seat LIN:
+        target: lin-actuators
+        description: LIN bus to window/seat/mirror/lighting/climate actuators
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [lin]
+
+  LIN Body Actuators:
+    id: lin-actuators
+    description: Window/seat/mirror/lighting/climate LIN slave actuators
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, body]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Comfort/body actuation; low criticality.
+
+  Front Camera:
+    id: camera-front
+    description: Forward perception camera (ADAS sensor)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [adas, ecu]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Perception input to AD compute.
+    data_assets_processed: [adas-fusion-data]
+
+  Rear Camera:
+    id: camera-rear
+    description: Rear/surround perception camera (ADAS sensor)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [adas, ecu]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: Surround/parking perception input.
+    data_assets_processed: [adas-fusion-data]
+
+  Front Radar:
+    id: radar-front
+    description: Forward radar (ADAS sensor)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [adas, ecu]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Range/velocity perception input to AD compute.
+    data_assets_processed: [adas-fusion-data]
+
+  Lidar:
+    id: lidar
+    description: Lidar perception sensor (ADAS)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [adas, ecu]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: High-resolution perception input to AD compute.
+    data_assets_processed: [adas-fusion-data]
+
+  Ultrasonic Sensors:
+    id: ultrasonic
+    description: Ultrasonic park-assist sensors (ADAS)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [adas, ecu]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: important
+    availability: operational
+    justification_cia_rating: Short-range proximity sensing.
+    data_assets_processed: [adas-fusion-data]
+
+  Driver Monitoring System:
+    id: dms
+    description: Driver monitoring system; in-cabin camera, biometrics (ASIL B, PII)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [adas, ecu]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: Holds biometric PII; required for L3 handover monitoring.
+    data_assets_processed: [pii-data]
+    communication_links:
+      DMS To ADAS Compute:
+        target: adas-compute
+        description: Driver-state to AD compute for handover decisions
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [pii-data]
+
+  EVSE Charging Station:
+    id: evse
+    description: Off-board EVSE / charging station; ISO 15118 PnC, CCS PLC
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: Off-board charging infrastructure.
+    size: system
+    technology: iot-device
+    tags: [charging, external, physical]
+    internet: true
+    machine: physical
+    encryption: transparent
+    owner: CPO
+    confidentiality: confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: External charging peer; 15118 contract-cert exchange.
+    communication_links:
+      EVSE To Charge Port:
+        target: charge-controller
+        description: ISO 15118 PnC over CCS PLC (TLS server-auth / mutual -20)
+        protocol: https
+        usage: business
+        authentication: client-certificate
+        authorization: technical-user
+        tags: [charging, external]
+        data_assets_sent: [charging-billing-data]
+
+  OBD-II Port:
+    id: obd-port
+    description: OBD-II diagnostic connector; UDS, DoIP, flashing (physical access)
+    type: external-entity
+    usage: devops
+    size: component
+    technology: gateway
+    tags: [obd-ii, doip, external, physical]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: Physical diagnostic entry; UDS seed/key often weak.
+    communication_links:
+      OBD To Central Gateway:
+        target: central-gateway
+        description: UDS / DoIP diagnostics and flashing to central gateway
+        protocol: text
+        usage: devops
+        authentication: credentials
+        authorization: technical-user
+        tags: [obd-ii, doip]
+        data_assets_sent: [diagnostic-data]
+
+  Companion App:
+    id: companion-app
+    description: Mobile companion app; remote lock/start, location, via OEM cloud
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: Off-board mobile client.
+    size: application
+    technology: web-application
+    tags: [external, telematics]
+    internet: true
+    machine: virtual
+    encryption: transparent
+    owner: Driver
+    confidentiality: confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: Remote command origin; API logic-flaw prone.
+    communication_links:
+      App To OEM Cloud:
+        target: oem-cloud
+        description: Companion-app API to OEM cloud
+        protocol: https
+        usage: business
+        authentication: credentials
+        authorization: enduser-identity-propagation
+        tags: [external, telematics]
+        data_assets_sent: [pii-data]
+
+trust_boundaries:
+
+  OEM Cloud Off-Board:
+    id: oem-cloud-boundary
+    description: OEM cloud / off-board systems and mobile clients
+    type: network-cloud-provider
+    technical_assets_inside: [oem-cloud, companion-app]
+
+  Connectivity Domain:
+    id: connectivity-domain
+    description: Internet/RF-exposed connectivity + infotainment
+    type: network-virtual-lan
+    technical_assets_inside: [tcu, ivi, v2x-module, wifi-bt-module, gnss-receiver]
+
+  Gateway Enforcement Layer:
+    id: gateway-enforcement
+    description: Central gateway / zone-controller segmentation chokepoint
+    type: network-virtual-lan
+    technical_assets_inside: [central-gateway, zone-chassis, zone-front, zone-rear, obd-port]
+
+  ADAS AD Domain:
+    id: adas-domain
+    description: AD compute and perception sensors
+    type: network-virtual-lan
+    technical_assets_inside: [adas-compute, camera-front, camera-rear, radar-front, lidar, ultrasonic, dms]
+
+  Safety Domain:
+    id: safety-domain
+    description: Safety-critical chassis/powertrain segment
+    type: network-virtual-lan
+    technical_assets_inside: [brake-ecu, steering-ecu, bms, vcu, inverter, dcdc-converter, airbag-ecu, body-controller, lin-actuators]
+
+  Charging Domain:
+    id: charging-domain
+    description: Charge port / EVCC, OBC, and BMS charging interface
+    type: network-virtual-lan
+    technical_assets_inside: [charge-controller, obc, evse]
+
+  Consolidated HPC Execution:
+    id: hpc-execution
+    description: Hypervisor partitions inside consolidated HPCs (IVI QM vs ADAS ASIL D)
+    type: execution-environment
+    technical_assets_inside: [central-compute]

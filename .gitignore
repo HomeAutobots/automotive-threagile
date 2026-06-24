@@ -1,0 +1,26 @@
+# Threagile generated artifacts
+/output/*
+!/output/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+*.swp
+
+# Local-only working artifacts — kept on disk, intentionally NOT published.
+# (Development/design material: Claude Code config, research, reference architecture,
+#  ATM/ATT&CK frameworks, writeups, and framework-validation tooling.)
+/.claude/
+/CLAUDE.md
+/model/CLAUDE.md
+/docs/
+/architecture/
+/frameworks/
+/writeups/
+/scripts/validate-frameworks.py

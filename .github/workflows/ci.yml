@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. when a PR branch is updated).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate model, analyzer regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python deps
+        run: pip install pyyaml networkx
+      - name: Model YAML parses
+        run: ./scripts/validate-model.sh
+      - name: Attack-path analyzer regression (Jeep demo)
+        run: |
+          python3 scripts/attack_path_analyzer.py \
+            scripts/examples/jeep-demo.threagile.yaml --out /tmp/demo.yaml
+          diff <(grep -v '^#' /tmp/demo.yaml) \
+               <(grep -v '^#' scripts/examples/jeep-demo.attack-paths.expected.yaml)
+          echo "analyzer regression OK"
+
+  lint:
+    name: Ruff (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Lint scripts/
+        run: ruff check scripts/
+
+  threagile:
+    name: Threagile analyze + report artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Threagile analyze (official Docker image, flag-style CLI)
+        run: |
+          mkdir -p output
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -v "$PWD:/app/work" \
+            threagile/threagile \
+            -model /app/work/model/threagile.yaml \
+            -output /app/work/output -verbose
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: threagile-report
+          path: |
+            output/report.pdf
+            output/data-flow-diagram.png
+            output/data-asset-diagram.png
+            output/risks.json
+            output/risks.xlsx
+          if-no-files-found: error

@@ -1,0 +1,69 @@
+individual_risk_categories:
+  Multi-Hop Attack Path To Safety-Critical ECU:
+    id: attack-path-to-safety-critical-ecu
+    description: An internet-exposed asset can reach a safety-critical ECU across one or more intermediate nodes/buses.
+    impact: Remote attacker can inject control messages affecting vehicle safety functions (steering, braking, transmission).
+    asvs: V1 - Architecture, Design and Threat Modeling
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+    action: Network Segmentation
+    mitigation: Enforce authenticated gateways between connectivity and safety domains; filter CAN IDs; add secure boot on bridges.
+    check: Is every path from an external interface to a safety ECU broken by an authenticated, filtering boundary?
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: Graph reachability from internet-exposed in-scope assets to assets tagged safety-critical.
+    risk_assessment: Severity from path length, weakest hop auth, and target integrity rating.
+    false_positives: Paths broken by controls not modelled as links (e.g. physical air-gap) may be false positives.
+    model_failure_possible_reason: false
+    cwe: 923
+    risks_identified:
+      <b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Steering ECU [2h, 1 path(s), weakest auth none]:
+        severity: critical
+        exploitation_likelihood: very-likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - steering-ecu
+        most_relevant_technical_asset: steering-ecu
+      <b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Brake ECU [2h, 1 path(s), weakest auth none]:
+        severity: critical
+        exploitation_likelihood: very-likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - brake-ecu
+        most_relevant_technical_asset: brake-ecu
+      <b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Transmission ECU [2h, 1 path(s), weakest auth none]:
+        severity: critical
+        exploitation_likelihood: very-likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - transmission-ecu
+        most_relevant_technical_asset: transmission-ecu
+  Attack-Path Chokepoint:
+    id: attack-path-chokepoint
+    description: A single node lies on every modelled path between an external interface and safety-critical ECUs.
+    impact: Compromise of this one node yields control over multiple safety-critical functions.
+    asvs: V1 - Architecture, Design and Threat Modeling
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
+    action: Defense in Depth
+    mitigation: Harden the chokepoint and add a second independent control so it is not a single point of compromise.
+    check: Is the chokepoint hardened and monitored?
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: Minimum node cut between internet-exposed assets and safety-critical assets.
+    risk_assessment: Critical when the node gates 2+ safety-critical ECUs.
+    false_positives: None expected.
+    model_failure_possible_reason: false
+    cwe: 1188
+    risks_identified:
+      <b>Chokepoint</b> CAN Bridge (V850) gates 3 safety-critical path(s):
+        severity: critical
+        exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - brake-ecu
+        - steering-ecu
+        - transmission-ecu
+        most_relevant_technical_asset: can-bridge
