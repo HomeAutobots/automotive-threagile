@@ -11,14 +11,15 @@ Tracked backlog for the automotive Threagile model + analyzer. Items are grouped
 Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 `reachable-unauthenticated-diagnostics` (all CI-enforced via the `cmd/script` harness).
 
-- [ ] `missing-secoc-on-safety-bus` — CAN/CAN-FD link to a `safety-critical` asset that is not
-      SecOC-authenticated. *Blocked on:* model marking SecOC links (see Model).
-- [ ] `cross-domain-link-no-filter` — connectivity→safety link crossing a trust boundary with
-      no authenticated/filtering gateway. High value.
+- [x] `missing-secoc-on-safety-bus` — fieldbus link to a `safety-critical` asset whose auth is
+      not SecOC (`credentials`); strictly broader than `unauthenticated-safety-bus-link`
+      (also catches non-SecOC auth). Harness-validated + CI-enforced.
+- [x] `cross-domain-link-no-filter` — exposed-domain source linking directly to safety without
+      an authenticated gateway/zone in between. Harness-validated + CI-enforced.
 - [ ] `unauthenticated-gateway-bridge` — gateway/zone-controller bridging domains over an
       `auth=none` link.
-- [ ] `reachable-debug-port` — exposed JTAG/UART/debug interface. *Blocked on:* modeling debug
-      ports as assets. (OBD/DoIP is already covered by `reachable-unauthenticated-diagnostics`.)
+- [ ] `reachable-debug-port` — exposed JTAG/UART/debug interface (now modelable: a `physical`
+      debug-port asset exists). Distinct from `reachable-unauthenticated-diagnostics` (OBD/DoIP).
 - [ ] `unencrypted-ota-channel` — *deferred:* needs an OTA-update flag not in the model.
 - [ ] `iso15118-server-only-tls` — *deferred:* needs per-link TLS directionality not modeled.
 - [ ] `internet-exposed-ecu-no-secure-boot` — *deferred:* secure-boot is not modeled.

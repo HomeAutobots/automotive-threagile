@@ -1,0 +1,116 @@
+id: missing-secoc-on-safety-bus
+title: Missing SecOC on Safety-Critical Fieldbus Link
+function: architecture
+stride: tampering
+cwe: 345
+description:
+  AUTOSAR SecOC protects in-vehicle fieldbus messages with a symmetric AES-CMAC
+  authenticator plus a freshness value, giving receivers verifiable data authenticity and
+  replay protection. In this model SecOC is represented as a link with
+  authentication "credentials". A CAN / CAN FD / LIN / FlexRay link that reaches a
+  safety-critical actuation asset (brake-by-wire, steer-by-wire, BMS, inverter, VCU)
+  WITHOUT SecOC (authentication anything other than "credentials") cannot verify that
+  actuation frames are authentic and fresh, so a node on the segment can forge or replay
+  commands. This is BROADER than the unauthenticated-safety-bus-link rule because it also
+  flags links that carry some other authentication (e.g. a session token) but lack SecOC
+  message authentication. Maps to MITRE ATT&CK for ICS T0855 "Unauthorized Command Message" and
+  T0856 "Spoof Reporting Message", and Auto-ISAC ATM "Manipulate In-Vehicle Network
+  Messaging".
+impact:
+  If this risk is unmitigated, an attacker with any foothold on the bus segment (a
+  compromised ECU, a malicious diagnostic device, or a bridged zone controller) can inject
+  or replay crafted frames that command unintended actuation of a safety-critical function,
+  directly endangering vehicle occupants and other road users. Link-level transport
+  authentication that is not SecOC (no AES-CMAC + freshness over the safety payload) does
+  not stop frame forgery or replay on the bus.
+asvs:
+  V2 - Authentication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action:
+  In-Vehicle Message Authentication (SecOC)
+mitigation:
+  Apply AUTOSAR SecOC (symmetric AES-CMAC authenticator plus a freshness value, keyed per
+  security domain) to every fieldbus link that reaches a safety-critical asset, and model
+  that link with authentication "credentials". Transport- or session-level authentication
+  that is not SecOC is insufficient on a broadcast fieldbus and must not be modeled as
+  SecOC. Where SecOC is infeasible, segment the safety bus behind an authenticating
+  gateway/zone controller and restrict which nodes may transmit safety message IDs.
+check:
+  Does every CAN / CAN FD / LIN / FlexRay link that reaches a safety-critical asset use
+  SecOC, i.e. authentication "credentials" (AES-CMAC + freshness)?
+detection_logic:
+  In-scope technical assets that originate at least one communication link tagged with a
+  fieldbus (can, can-fd, lin, flexray) whose authentication is NOT "credentials" (SecOC),
+  where either the link's target asset or the originating asset itself carries the
+  "safety-critical" tag. Because zero-value enums are dropped in the parsed model, an
+  absent/"none" authentication and any non-SecOC method (token, session-id, etc.) both
+  satisfy "not credentials" and are flagged.
+risk_assessment:
+  The risk rating depends on the integrity and availability sensitivity of the
+  safety-critical asset and the data assets carried on the bus. Safety-critical actuation
+  is rated mission-critical, so these findings are high severity.
+false_positives:
+  Links genuinely protected by SecOC or an equivalent message-authentication scheme
+  (modeled with authentication "credentials") are false positives. Diagnostic-only buses
+  with no actuation reachable may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>{tech_asset.title}</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # link is NOT SecOC-protected (SecOC == authentication credentials).
+                  # A single not-equal catches absent/none AND any other auth method,
+                  # so this is broader than unauthenticated-safety-bus-link.
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  # link rides a fieldbus
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      or:
+                        - equal:
+                            first: "{link_tag}"
+                            second: can
+                        - equal:
+                            first: "{link_tag}"
+                            second: can-fd
+                        - equal:
+                            first: "{link_tag}"
+                            second: lin
+                        - equal:
+                            first: "{link_tag}"
+                            second: flexray
+                  # the originating asset or the link target is safety-critical
+                  - or:
+                      - contains:
+                          item: safety-critical
+                          in: "{tech_asset.tags}"
+                      - contains:
+                          item: safety-critical
+                          in: "{$model.technical_assets.{link.target_id}.tags}"
+          then:
+            return: true

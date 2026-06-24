@@ -1,0 +1,160 @@
+id: cross-domain-link-no-filter
+title: Cross-Domain Link From Exposed Domain to Safety Without Authenticated Filter
+function: architecture
+stride: elevation-of-privilege
+cwe: 923
+description:
+  A defensible vehicle E/E architecture forces traffic from externally exposed domains
+  (connectivity, telematics, infotainment, V2X, external devices) to cross an
+  authenticated filtering boundary (a gateway or zone controller) before it can reach the
+  safety domain (safety-critical actuation, powertrain, chassis). This rule flags a DIRECT
+  communication link whose source carries an exposure tag
+  (connectivity / telematics / infotainment / external / v2x) and whose target is in the
+  safety domain (safety-critical / powertrain / chassis), where the link carries no
+  authentication AND neither endpoint is a gateway or zone controller. Such a link lets a
+  compromised exposed component address safety-domain assets without passing an
+  authenticated filter, enabling lateral movement and privilege escalation from the remote
+  attack surface into vehicle control. Maps to MITRE ATT&CK for ICS T0843 "Modify Program"
+  and Enterprise T1210 "Exploitation of Remote Services", and Auto-ISAC ATM
+  "Pivot to In-Vehicle Network" / "Lateral Movement to Safety Domain".
+impact:
+  If this risk is unmitigated, an attacker who compromises an internet/RF-exposed component
+  can send traffic straight to safety-critical, powertrain, or chassis assets without
+  crossing an authenticated gateway, collapsing the domain separation the architecture
+  relies on and putting vehicle control directly within reach of a remote foothold.
+asvs:
+  V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html
+action:
+  Authenticated Cross-Domain Filtering
+mitigation:
+  Route every link from an exposed domain to the safety domain through an authenticating
+  gateway or zone controller that filters and authenticates cross-domain messages; do not
+  wire exposed components directly to safety-domain assets. Where a direct link is
+  unavoidable, require message authentication (e.g. SecOC / mutual TLS) on it. Model the
+  link authenticated only once that control is actually designed in.
+check:
+  Does every direct link from a connectivity/telematics/infotainment/external/v2x source to
+  a safety-critical/powertrain/chassis target either pass through a gateway/zone controller
+  or carry authentication (not authentication "none")?
+detection_logic:
+  In-scope technical assets tagged with an exposure tag (connectivity, telematics,
+  infotainment, external, v2x) that originate a communication link whose target is tagged
+  safety-critical, powertrain, or chassis, where the link authentication is absent/"none"
+  (not a real method) AND neither the source asset nor the target asset is tagged gateway
+  or zone-controller. Because zero-value enums are dropped in the parsed model,
+  authentication is treated as absent unless the link declares a real method (credentials,
+  session-id, token, client-certificate, two-factor, externalized). A properly gatewayed
+  hop is the mitigated case and is intentionally excluded.
+risk_assessment:
+  The risk rating depends on how directly the exposed source can drive the safety target
+  and the integrity/availability sensitivity of that target. Direct exposed-to-safety links
+  are high severity because they bypass domain separation.
+false_positives:
+  Links that traverse a gateway/zone controller (either endpoint tagged gateway or
+  zone-controller) or that carry real authentication are mitigated and excluded. Direct
+  links to safety-domain assets that are physically isolated or otherwise unreachable from
+  the exposed source may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Cross-Domain Link Without Authenticated Filter</b> at <b>{tech_asset.title}</b>: an exposed-domain asset links directly to the safety domain with no authenticated gateway in between"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            # source asset is in an exposed domain
+            - any:
+                in: "{tech_asset.tags}"
+                item: src_tag
+                or:
+                  - equal:
+                      first: "{src_tag}"
+                      second: connectivity
+                  - equal:
+                      first: "{src_tag}"
+                      second: telematics
+                  - equal:
+                      first: "{src_tag}"
+                      second: infotainment
+                  - equal:
+                      first: "{src_tag}"
+                      second: external
+                  - equal:
+                      first: "{src_tag}"
+                      second: v2x
+            # source itself is NOT a filtering boundary (no gateway/zone-controller tag).
+            # Expressed with all-over-tags because the DSL has no "not" operator.
+            - all:
+                in: "{tech_asset.tags}"
+                item: src_filter_tag
+                and:
+                  - not-equal:
+                      first: "{src_filter_tag}"
+                      second: gateway
+                  - not-equal:
+                      first: "{src_filter_tag}"
+                      second: zone-controller
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # link carries no real authentication method (none == absent)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: externalized
+                  # target is in the safety domain
+                  - or:
+                      - contains:
+                          item: safety-critical
+                          in: "{$model.technical_assets.{link.target_id}.tags}"
+                      - contains:
+                          item: powertrain
+                          in: "{$model.technical_assets.{link.target_id}.tags}"
+                      - contains:
+                          item: chassis
+                          in: "{$model.technical_assets.{link.target_id}.tags}"
+                  # target is NOT a filtering boundary (no gateway/zone-controller tag)
+                  - all:
+                      in: "{$model.technical_assets.{link.target_id}.tags}"
+                      item: tgt_filter_tag
+                      and:
+                        - not-equal:
+                            first: "{tgt_filter_tag}"
+                            second: gateway
+                        - not-equal:
+                            first: "{tgt_filter_tag}"
+                            second: zone-controller
+          then:
+            return: true

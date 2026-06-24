@@ -19,6 +19,21 @@ business_criticality: mission-critical
 #                          -> SHOULD trigger reachable-unauthenticated-diagnostics
 #   - obd-tester         : has an UNAUTHENTICATED obd-ii link
 #                          -> SHOULD trigger reachable-unauthenticated-diagnostics
+#
+#   missing-secoc-on-safety-bus (broader than unauthenticated-safety-bus):
+#   - chassis-zone-controller : no-auth CAN-FD link to safety brake ECU -> fires
+#   - token-auth-zone         : CAN-FD link with authentication TOKEN (not SecOC)
+#                               to safety steering ECU -> fires (proves broader)
+#   - safe-chassis-gateway    : CAN-FD link with auth CREDENTIALS (== SecOC)
+#                               to safety ECU -> must NOT fire (negative control)
+#
+#   cross-domain-link-no-filter (exposed domain -> safety w/o auth gateway):
+#   - rogue-telematics        : telematics/connectivity source with a DIRECT
+#                               no-auth link to a safety-critical ECU, neither
+#                               endpoint is gateway/zone -> fires
+#   - telematics-unit         : connectivity source whose only safety-ward link
+#                               goes THROUGH a zone-controller -> must NOT fire
+#   - safe-chassis-gateway    : link source IS a gateway -> must NOT fire
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -176,13 +191,13 @@ technical_assets:
             - id: safe-gw>steer-cmd
               source_id: safe-chassis-gateway
               target_id: steering-ecu
-              title: Steering Command (CAN-FD, authenticated)
-              description: Authenticated actuation command frames (negative control).
+              title: Steering Command (CAN-FD, SecOC / credentials)
+              description: SecOC-protected (AES-CMAC + freshness) actuation frames (negative control).
               protocol: unknown-protocol
               tags:
                 - can-fd
                 - chassis
-              authentication: client-certificate
+              authentication: credentials
               authorization: technical-user
               data_assets_sent:
                 - vehicle-control-commands
@@ -331,3 +346,81 @@ technical_assets:
             - infotainment
         data_assets_processed:
             - telematics-telemetry
+    token-auth-zone:
+        id: token-auth-zone
+        title: Domain Controller (token-auth bus, no SecOC)
+        description: Sends CAN-FD steering commands authenticated with a TOKEN, not SecOC; proves missing-secoc is broader than the unauthenticated rule.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: critical
+        justification_cia_rating: |
+            Authenticated with a token but not SecOC; lacks AES-CMAC + freshness.
+        tags:
+            - ecu
+            - chassis
+            - can-fd
+        data_assets_processed:
+            - vehicle-control-commands
+        communication_links:
+            - id: token-auth-zone>steer-cmd
+              source_id: token-auth-zone
+              target_id: steering-ecu
+              title: Steering Command (CAN-FD, token auth, NO SecOC)
+              description: Token-authenticated but not SecOC actuation frames to a safety ECU.
+              protocol: unknown-protocol
+              tags:
+                - can-fd
+                - chassis
+              authentication: token
+              authorization: technical-user
+              data_assets_sent:
+                - vehicle-control-commands
+    rogue-telematics:
+        id: rogue-telematics
+        title: Telematics Unit with Direct Safety Bus Link (no filter)
+        description: Connectivity/telematics source with a DIRECT no-auth link straight onto a safety-critical ECU, bypassing any authenticated gateway/zone boundary.
+        type: process
+        size: application
+        technologies:
+            - name: telematics
+              description: Telematics control unit
+              attributes:
+                telematics: true
+        machine: physical
+        internet: true
+        encryption: data-with-symmetric-shared-key
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Internet-facing unit wired directly to the safety domain with no filtering boundary.
+        tags:
+            - telematics
+            - connectivity
+            - cellular
+        data_assets_processed:
+            - telematics-telemetry
+        communication_links:
+            - id: rogue-telematics>brake-direct
+              source_id: rogue-telematics
+              target_id: brake-actuator-ecu
+              title: Direct link to brake ECU (no auth, no gateway)
+              description: Exposed domain reaches the safety domain with no authenticated filtering boundary.
+              protocol: unknown-protocol
+              tags:
+                - can-fd
+                - chassis
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - telematics-telemetry

@@ -20,6 +20,8 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `unauthenticated-safety-bus-link.yaml` | In-scope asset that originates a CAN/CAN FD/LIN/FlexRay link with no authentication where the link target (or the asset itself) is `safety-critical` — i.e. forgeable actuation frames on a safety bus. | tampering / CWE-306 |
 | `internet-exposed-ecu-unencrypted.yaml` | In-scope `internet: true` asset tagged `ecu`/`telematics`/`infotainment` with no encryption — sensitive connected-vehicle data exposed in transit/at rest. | information-disclosure / CWE-319 |
 | `reachable-unauthenticated-diagnostics.yaml` | In-scope asset that originates an `obd-ii` or `doip` link with no authentication — an unauthenticated UDS diagnostic/flashing surface. | elevation-of-privilege / CWE-1188 |
+| `missing-secoc-on-safety-bus.yaml` | In-scope asset that originates a CAN/CAN FD/LIN/FlexRay link reaching a `safety-critical` target (or the asset itself is safety-critical) where authentication is NOT `credentials` (SecOC = AES-CMAC + freshness). Broader than the unauthenticated-safety-bus rule: also flags safety-bus links carrying some other auth (e.g. `token`) but no SecOC. | tampering / CWE-345 |
+| `cross-domain-link-no-filter.yaml` | In-scope asset tagged with an exposure tag (`connectivity`/`telematics`/`infotainment`/`external`/`v2x`) that originates a no-auth link to a `safety-critical`/`powertrain`/`chassis` target where neither endpoint is a `gateway`/`zone-controller` — an exposed domain reaching safety without an authenticated filtering boundary. | elevation-of-privilege / CWE-923 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -47,14 +49,33 @@ go run cmd/script/main.go -script <abs-path>/model/custom-risk-rules/<rule>.yaml
 be confirmed to fire on the intended asset and skip the controls:
 
 - `chassis-zone-controller` — unauth CAN-FD link to safety-critical brake ECU → fires
-  rule 1. `safe-chassis-gateway` (authenticated link to a safety ECU) is the negative
-  control and must NOT fire.
-- `telematics-unit` — `internet: true`, encryption none, tagged telematics → fires rule 2.
-  `infotainment-offline` (`internet: false`) is the negative control.
-- `obd-tester` — unauth `obd-ii` and `doip` links → fires rule 3.
+  `unauthenticated-safety-bus-link`. `safe-chassis-gateway` now sends a SecOC link
+  (`authentication: credentials`) to a safety ECU and is the negative control — it must
+  NOT fire the safety-bus or SecOC rules.
+- `telematics-unit` — `internet: true`, encryption none, tagged telematics → fires
+  `internet-exposed-ecu-unencrypted`. `infotainment-offline` (`internet: false`) is the
+  negative control.
+- `obd-tester` — unauth `obd-ii` and `doip` links → fires
+  `reachable-unauthenticated-diagnostics`.
+- `token-auth-zone` — CAN-FD link to a safety steering ECU with `authentication: token`
+  (NOT SecOC) → fires `missing-secoc-on-safety-bus` but NOT
+  `unauthenticated-safety-bus-link`, proving the SecOC rule is the broader of the two.
+  `safe-chassis-gateway` (`authentication: credentials` = SecOC) is the SecOC negative
+  control.
+- `rogue-telematics` — `connectivity`/`telematics` source with a DIRECT no-auth CAN-FD
+  link straight to the safety-critical brake ECU, where neither endpoint is a
+  gateway/zone-controller → fires `cross-domain-link-no-filter`. It is given a real
+  encryption value (`data-with-symmetric-shared-key`) so it does NOT also trip the
+  internet-encryption rule. Negative controls for the cross-domain rule: `telematics-unit`
+  (its only safety-ward link goes THROUGH the `chassis-zone-controller`, a gatewayed hop)
+  and `safe-chassis-gateway` (source itself is a gateway) must NOT fire.
 
-Validated results: rule 1 -> `chassis-zone-controller` only; rule 2 -> `telematics-unit`
-only; rule 3 -> `obd-tester` only.
+Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
+`rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
+`reachable-unauthenticated-diagnostics` -> `obd-tester` only; `missing-secoc-on-safety-bus`
+-> `chassis-zone-controller`, `token-auth-zone`, `rogue-telematics` (skips
+`safe-chassis-gateway`); `cross-domain-link-no-filter` -> `rogue-telematics` only (skips
+`telematics-unit` and `safe-chassis-gateway`).
 
 ## Caveat (still applies)
 
