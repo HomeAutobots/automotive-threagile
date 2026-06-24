@@ -1,0 +1,105 @@
+id: internet-exposed-ecu-no-secure-boot
+title: Internet-Exposed Vehicle ECU Without Verified / Secure Boot
+function: architecture
+stride: tampering
+cwe: 1326
+description:
+  Connected on-board compute nodes that face the internet or RF networks (telematics
+  control units, infotainment head units, connectivity modules, and other internet-reachable
+  ECUs) are the primary remote attack surface of the vehicle. When such a node does not
+  enforce a verified / secure boot chain anchored in an immutable hardware root of trust,
+  an attacker who achieves code execution on it can write a malicious image or bootloader
+  that survives reset and re-flash, turning a transient remote compromise into a persistent
+  implant on the vehicle. In this model a node that implements verified/secure boot carries
+  the secure-boot tag; the absence of that tag on an internet-reachable compute node means
+  no immutable root of trust gates what executes at boot. Maps to MITRE ATT&CK Enterprise
+  T1542 "Pre-OS Boot" (and T1542.001 "System Firmware") / ICS T0857 "System Firmware", and
+  Auto-ISAC ATM "Establish Persistence on ECU" / "Bypass Secure Boot".
+impact:
+  If this risk is unmitigated, an attacker who gains code execution on an internet/RF-exposed
+  ECU can install a persistent boot-time implant that re-establishes the foothold across
+  reboots and firmware updates, evades remediation, and serves as a durable pivot toward
+  in-vehicle networks and safety-critical domains.
+asvs:
+  V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html
+action:
+  Verified / Secure Boot With Hardware Root of Trust
+mitigation:
+  Anchor a verified / secure boot chain in an immutable hardware root of trust (boot ROM,
+  HSM/SE-backed keys) on every internet/RF-exposed compute node, so each boot stage
+  cryptographically verifies the next and unsigned or modified images are rejected. Pair
+  with rollback protection and authenticated firmware update (signed images). Once verified
+  boot is designed in, tag the asset secure-boot; an internet-reachable compute node without
+  that tag is treated as lacking an immutable root of trust for boot.
+check:
+  Does every internet/RF-exposed on-board compute node (ECU, telematics, infotainment,
+  connectivity) enforce verified/secure boot anchored in an immutable hardware root of trust
+  (i.e. carry the secure-boot tag)?
+detection_logic:
+  In-scope technical assets with internet exposure (internet true) that are tagged as
+  on-board compute (ecu, telematics, infotainment, or connectivity) and that do NOT carry the
+  secure-boot tag. Because the DSL has no "not" operator, "tag absent" is expressed as an
+  all-over-tags not-equal check against secure-boot, which is true on an empty or
+  secure-boot-free tag list.
+risk_assessment:
+  The risk rating depends on the reachability of the node and what it can reach once
+  persistently implanted; an internet-facing compute node that can pivot toward safety
+  domains without verified boot is high severity.
+false_positives:
+  Internet-exposed compute nodes that genuinely enforce verified/secure boot (and are tagged
+  secure-boot accordingly), or whose boot integrity is provided by an out-of-band mechanism
+  modeled elsewhere, can be reviewed as false positives.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Internet-Exposed Vehicle ECU Without Secure Boot</b> at <b>{tech_asset.title}</b>: an internet-facing compute node lacks a verified boot chain and can be persistently implanted"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - true: "{tech_asset.internet}"
+            # on-board connected compute class
+            - any:
+                in: "{tech_asset.tags}"
+                item: asset_tag
+                or:
+                  - equal:
+                      first: "{asset_tag}"
+                      second: ecu
+                  - equal:
+                      first: "{asset_tag}"
+                      second: telematics
+                  - equal:
+                      first: "{asset_tag}"
+                      second: infotainment
+                  - equal:
+                      first: "{asset_tag}"
+                      second: connectivity
+            # secure-boot tag is ABSENT (no "not" operator -> all-over-tags not-equal,
+            # which is true on an empty / secure-boot-free tag list)
+            - all:
+                in: "{tech_asset.tags}"
+                item: boot_tag
+                and:
+                  - not-equal:
+                      first: "{boot_tag}"
+                      second: secure-boot
+          then:
+            return: true

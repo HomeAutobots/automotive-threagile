@@ -24,6 +24,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `cross-domain-link-no-filter.yaml` | In-scope asset tagged with an exposure tag (`connectivity`/`telematics`/`infotainment`/`external`/`v2x`) that originates a no-auth link to a `safety-critical`/`powertrain`/`chassis` target where neither endpoint is a `gateway`/`zone-controller` — an exposed domain reaching safety without an authenticated filtering boundary. | elevation-of-privilege / CWE-923 |
 | `unauthenticated-gateway-bridge.yaml` | In-scope asset tagged `gateway` or `zone-controller` (a segmentation enforcement point) that originates a communication link with no authentication — the bridge forwards traffic across a boundary without authenticating it, weakening segmentation. Distinct from `cross-domain-link-no-filter` (which fires when NEITHER endpoint is a gateway/zone, i.e. a missing filter); this fires precisely when the bridging node IS the gateway/zone but its link is unauthenticated (a filter present but not authenticating). | elevation-of-privilege / CWE-306 |
 | `reachable-debug-port.yaml` | In-scope asset that originates a communication link tagged `physical` with no authentication — a hardware debug/test interface (JTAG/UART) left reachable without an authenticated secure-debug unlock. Distinct from `reachable-unauthenticated-diagnostics` (logical OBD-II/DoIP/UDS surface); this covers the silicon-level hardware debug surface. | elevation-of-privilege / CWE-1191 |
+| `internet-exposed-ecu-no-secure-boot.yaml` | In-scope `internet: true` asset tagged as on-board compute (`ecu`/`telematics`/`infotainment`/`connectivity`) that does NOT carry the `secure-boot` tag — an externally reachable compute node lacking a verified boot chain / immutable root of trust, so a remote compromise can be turned into a persistent boot-time implant. | tampering / CWE-1326 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -81,6 +82,14 @@ be confirmed to fire on the intended asset and skip the controls:
   authenticated secure-debug unlock), so it must NOT fire. Both carry only the `physical`
   link tag (no fieldbus/diagnostic tag), so they do not trip the safety-bus, SecOC, or
   diagnostics rules.
+- `connected-ecu-no-secure-boot` — in-scope `internet: true` compute node tagged
+  `connectivity`/`ecu`/`external` WITHOUT the `secure-boot` tag → fires
+  `internet-exposed-ecu-no-secure-boot` (no immutable root of trust for boot).
+  `secure-boot-ecu` is the negative control: same exposure but it carries the `secure-boot`
+  tag, so it must NOT fire. Both use `encryption: data-with-symmetric-shared-key`, so they do
+  not also trip `internet-exposed-ecu-unencrypted`. The pre-existing internet-facing assets
+  `telematics-unit` and `rogue-telematics` are given the `secure-boot` tag so they do NOT
+  fire this rule either; that tag does not affect their other documented matches.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -89,7 +98,9 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `safe-chassis-gateway`); `cross-domain-link-no-filter` -> `rogue-telematics` only (skips
 `telematics-unit` and `safe-chassis-gateway`); `unauthenticated-gateway-bridge` ->
 `chassis-zone-controller` only (skips `safe-chassis-gateway`); `reachable-debug-port` ->
-`debug-interface` only (skips `secure-debug-port`).
+`debug-interface` only (skips `secure-debug-port`); `internet-exposed-ecu-no-secure-boot`
+-> `connected-ecu-no-secure-boot` only (skips `secure-boot-ecu`, `telematics-unit`,
+`rogue-telematics`, and the internet-`false` `infotainment-offline`).
 
 ## Caveat (still applies)
 
@@ -101,9 +112,11 @@ and harness-validated only. For findings that must ship in the report, emit them
 
 `unencrypted-ota-channel` and `iso15118-server-only-tls` are deferred: both hinge on
 fields not represented in our parsed model (an OTA-update flag / per-link directionality
-of TLS), so they would require inventing fields outside the tag vocabulary. An
-`internet-exposed-ecu-no-secure-boot` rule is dropped because secure-boot is not modeled
-(per the no-invented-fields constraint).
+of TLS), so they would require inventing fields outside the tag vocabulary.
+
+`internet-exposed-ecu-no-secure-boot` is now authored: the model carries a `secure-boot`
+asset tag (assets that implement verified/secure boot carry it), so "lacks secure boot" is
+expressed within the tag vocabulary as the absence of that tag, with no invented fields.
 
 `reachable-debug-port` (hardware JTAG/UART debug surface, modeled via the `physical` link
 tag) is now authored as a distinct rule from `reachable-unauthenticated-diagnostics`
