@@ -52,8 +52,10 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 - [x] `pytest` unit tests (`tests/test_analyzer.py`, 13 cases) + CI `tests` job.
 
 ## Technique mapping (maintained locally; not part of the published repo)
-- [ ] Fill the ATM / ATT&CK crosswalk orphans now that the assets exist — V2X, GNSS,
-      perception sensors, body/BCM, key-fob.
+- [x] Fill the ATM / ATT&CK crosswalk orphans — all 10 resolved (ATM 3, ATT&CK 7): sensor
+      attacks → camera/radar/lidar/ultrasonic/GNSS, adversarial-ML → adas-compute, key-fob
+      relay → digital-key/body-controller, V2X → v2x-module, mobile techniques → companion-app.
+      Done in the local-only `frameworks/` tree; `validate-frameworks.py` reports 0 orphans.
 
 ## Repo / process
 - [x] CI: model validation, analyzer regression, ruff, Threagile report, custom-rule harness.
