@@ -2,17 +2,31 @@
 # Thin wrapper around the Threagile Docker image.
 # Usage: scripts/run-threagile.sh [model.yaml] [output_dir]
 #
+# Multi-hop merge: if the default model is used and model/attack-paths.yaml exists
+# (produced by scripts/attack_path_analyzer.py), this concatenates the model with that
+# file into a combined model so the analyzer's individual_risk_categories (attack paths +
+# chokepoints) appear in the same report. The analyzer output only adds a top-level
+# `individual_risk_categories:` block that the base model lacks, so concatenation is valid
+# YAML. (The released image silently ignores Threagile's `includes:` key, hence this merge.)
+#
 # NOTE: the official threagile/threagile image (v1.0.0, build 20240730113903) uses
 # FLAG-style args (-model / -output / -verbose), NOT subcommands. An invocation like
 # `threagile analyze --model ...` is silently mis-parsed (the flag parser stops at the
 # `analyze` positional, ignores the flags, and falls back to the default ./threagile.yaml).
-# (Verified against the official threagile/threagile image.)
-# On rootful-Docker Linux hosts the output dir must be writable by the container user;
-# add `--user "$(id -u):$(id -g)"` if you hit a permission-denied panic.
+# `--user` makes the mounted output dir writable by the container on rootful-Docker Linux
+# (and is harmless on Docker Desktop). (Verified against the official image.)
 set -euo pipefail
 MODEL="${1:-model/threagile.yaml}"
 OUT="${2:-output}"
 mkdir -p "$OUT"
-docker run --rm -v "$(pwd):/app/work" threagile/threagile \
-  -model "/app/work/${MODEL}" -output "/app/work/${OUT}" -verbose
+
+RUN_MODEL="$MODEL"
+if [ "$MODEL" = "model/threagile.yaml" ] && [ -f model/attack-paths.yaml ]; then
+  RUN_MODEL="${OUT}/combined-model.yaml"
+  { cat model/threagile.yaml; echo; cat model/attack-paths.yaml; } > "$RUN_MODEL"
+  echo "Merged model/attack-paths.yaml into ${RUN_MODEL}"
+fi
+
+docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd):/app/work" threagile/threagile \
+  -model "/app/work/${RUN_MODEL}" -output "/app/work/${OUT}" -verbose
 echo "Artifacts written to ${OUT}/ (report.pdf, data-flow-diagram.png, risks.xlsx, risks.json)"
