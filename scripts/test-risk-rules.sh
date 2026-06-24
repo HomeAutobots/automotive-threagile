@@ -29,6 +29,8 @@ CASES="
 unauthenticated-safety-bus-link|unauthenticated-safety-bus-link@chassis-zone-controller|safe-chassis-gateway
 internet-exposed-ecu-unencrypted|internet-exposed-ecu-unencrypted@telematics-unit|infotainment-offline
 reachable-unauthenticated-diagnostics|reachable-unauthenticated-diagnostics@obd-tester|
+missing-secoc-on-safety-bus|missing-secoc-on-safety-bus@token-auth-zone|safe-chassis-gateway
+cross-domain-link-no-filter|cross-domain-link-no-filter@rogue-telematics|telematics-unit
 "
 
 fail=0
