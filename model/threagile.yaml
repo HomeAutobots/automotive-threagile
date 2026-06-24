@@ -45,6 +45,7 @@ tags_available:
   - ota
   - external
   - physical
+  - secure-boot
 
 data_assets:
 
@@ -177,7 +178,7 @@ technical_assets:
     usage: business
     size: application
     technology: gateway
-    tags: [connectivity, telematics, cellular, ota, external]
+    tags: [connectivity, telematics, cellular, ota, external, secure-boot]
     internet: true
     machine: physical
     encryption: none
@@ -207,7 +208,7 @@ technical_assets:
     used_as_client_by_human: true
     size: application
     technology: web-application
-    tags: [infotainment, connectivity, bluetooth, external]
+    tags: [infotainment, connectivity, bluetooth, external, secure-boot]
     internet: true
     machine: physical
     encryption: none
@@ -325,7 +326,7 @@ technical_assets:
     usage: business
     size: system
     technology: application-server
-    tags: [gateway, connectivity]
+    tags: [gateway, connectivity, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -361,7 +362,7 @@ technical_assets:
     usage: business
     size: system
     technology: application-server
-    tags: [adas, safety-critical]
+    tags: [adas, safety-critical, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -389,7 +390,7 @@ technical_assets:
     usage: business
     size: component
     technology: gateway
-    tags: [gateway]
+    tags: [gateway, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -440,7 +441,7 @@ technical_assets:
     usage: business
     size: component
     technology: gateway
-    tags: [zone-controller, chassis, gateway]
+    tags: [zone-controller, chassis, gateway, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -484,7 +485,7 @@ technical_assets:
     usage: business
     size: component
     technology: gateway
-    tags: [zone-controller, gateway, body]
+    tags: [zone-controller, gateway, body, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -556,7 +557,7 @@ technical_assets:
     usage: business
     size: component
     technology: gateway
-    tags: [zone-controller, gateway, body]
+    tags: [zone-controller, gateway, body, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -616,7 +617,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, safety-critical, chassis]
+    tags: [ecu, safety-critical, chassis, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -634,7 +635,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, safety-critical, chassis]
+    tags: [ecu, safety-critical, chassis, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -652,7 +653,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, safety-critical, powertrain]
+    tags: [ecu, safety-critical, powertrain, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -688,7 +689,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, safety-critical, powertrain]
+    tags: [ecu, safety-critical, powertrain, secure-boot]
     internet: false
     machine: physical
     encryption: none
@@ -768,7 +769,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, safety-critical, powertrain, charging]
+    tags: [ecu, safety-critical, powertrain, charging, secure-boot]
     internet: false
     machine: physical
     encryption: none

@@ -23,7 +23,8 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
       Harness-validated + CI-enforced.
 - [ ] `unencrypted-ota-channel` — *deferred:* needs an OTA-update flag not in the model.
 - [ ] `iso15118-server-only-tls` — *deferred:* needs per-link TLS directionality not modeled.
-- [ ] `internet-exposed-ecu-no-secure-boot` — *deferred:* secure-boot is not modeled.
+- [x] `internet-exposed-ecu-no-secure-boot` — internet-exposed ECU/compute lacking the
+      `secure-boot` tag. Harness-validated + CI-enforced.
 
 ## Model (`model/threagile.yaml`)
 - [x] Mark **SecOC-authenticated** links — modeled (as `authentication: credentials` +
@@ -33,8 +34,11 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
       a legacy **FlexRay** chassis link/actuator, and **USB/SD media**. *Still deferred:*
       SENT/PSI5 sensor buses and the NFC digital-key surface (need tags not in the vocabulary —
       would require expanding the tag vocabulary first).
-- [ ] Model **secure-boot / firmware-signing** (as tags or data-asset relationships) so the
-      related rules become expressible. *(Likely needs a tag-vocabulary addition.)*
+- [x] Model **secure-boot** — added a `secure-boot` tag (vocabulary expanded) on the main
+      compute, gateways/zones, and flagship safety ECUs; the simpler RF modules + charge
+      controller deliberately lack it (the gap the no-secure-boot rule flags).
+- [ ] Model **firmware-signing / Uptane** as a distinct property (partially implied today by
+      the OTA client-cert link + crypto-material data asset) if a dedicated rule is wanted.
 - [x] Drop the `(SEED)` suffix from the title (now `Composite BEV Zonal L3+`).
 
 ## Analyzer (`scripts/attack_path_analyzer.py`)

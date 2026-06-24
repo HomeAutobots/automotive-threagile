@@ -33,6 +33,7 @@ missing-secoc-on-safety-bus|missing-secoc-on-safety-bus@token-auth-zone|safe-cha
 cross-domain-link-no-filter|cross-domain-link-no-filter@rogue-telematics|telematics-unit
 unauthenticated-gateway-bridge|unauthenticated-gateway-bridge@chassis-zone-controller|safe-chassis-gateway
 reachable-debug-port|reachable-debug-port@debug-interface|secure-debug-port
+internet-exposed-ecu-no-secure-boot|internet-exposed-ecu-no-secure-boot@connected-ecu-no-secure-boot|secure-boot-ecu
 "
 
 fail=0

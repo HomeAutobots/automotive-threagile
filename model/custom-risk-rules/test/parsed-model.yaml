@@ -46,6 +46,15 @@ business_criticality: mission-critical
 #                               no-auth debug link -> fires
 #   - secure-debug-port       : in-scope asset whose `physical`-tagged debug link
 #                               requires client-certificate auth -> must NOT fire
+#
+#   internet-exposed-ecu-no-secure-boot (internet compute node lacking verified boot):
+#   - connected-ecu-no-secure-boot : in-scope internet:true compute node tagged
+#                                    connectivity/ecu WITHOUT the `secure-boot` tag
+#                                    -> fires (no immutable root of trust for boot)
+#   - secure-boot-ecu              : in-scope internet:true compute node carrying the
+#                                    `secure-boot` tag -> must NOT fire (negative control)
+#     (telematics-unit and rogue-telematics are given the `secure-boot` tag so they do
+#      NOT also fire this rule; their other documented matches are unaffected.)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -238,6 +247,7 @@ technical_assets:
             - telematics
             - connectivity
             - cellular
+            - secure-boot
         data_assets_processed:
             - telematics-telemetry
         communication_links:
@@ -420,6 +430,7 @@ technical_assets:
             - telematics
             - connectivity
             - cellular
+            - secure-boot
         data_assets_processed:
             - telematics-telemetry
         communication_links:
@@ -514,3 +525,56 @@ technical_assets:
                 - diagnostic-data
               data_assets_received:
                 - diagnostic-data
+    connected-ecu-no-secure-boot:
+        id: connected-ecu-no-secure-boot
+        title: Internet-Connected ECU Without Secure Boot
+        description: In-scope internet-exposed on-board compute node lacking a verified/secure boot chain (no secure-boot tag) -> persistently implantable.
+        type: process
+        size: application
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        internet: true
+        encryption: data-with-symmetric-shared-key
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Internet-facing compute node with no immutable root of trust for boot.
+        tags:
+            - connectivity
+            - ecu
+            - external
+        data_assets_processed:
+            - telematics-telemetry
+    secure-boot-ecu:
+        id: secure-boot-ecu
+        title: Hardened Internet-Connected ECU (secure boot, negative control)
+        description: In-scope internet-exposed compute node that enforces verified/secure boot (carries the secure-boot tag); must NOT trigger.
+        type: process
+        size: application
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        internet: true
+        encryption: data-with-symmetric-shared-key
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Internet-facing compute node with a verified boot chain anchored in a hardware root of trust (negative control).
+        tags:
+            - connectivity
+            - ecu
+            - external
+            - secure-boot
+        data_assets_processed:
+            - telematics-telemetry
