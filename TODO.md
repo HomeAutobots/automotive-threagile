@@ -68,4 +68,5 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 - [x] `validate-model.sh` rejects duplicate YAML keys (matches Threagile's strict Go parser;
       PyYAML silently kept the last one).
 - [ ] Broaden the rule test fixture with more negative controls as rules grow.
-- [ ] Add a sample findings summary / report screenshot to the README.
+- [x] Add a sample findings summary to the README (report severity breakdown, multi-hop
+      paths, chokepoints, a per-hop technique-tagged path).
