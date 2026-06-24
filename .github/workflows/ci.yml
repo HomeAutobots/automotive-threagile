@@ -53,15 +53,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Threagile analyze (official Docker image, flag-style CLI)
-        run: |
-          mkdir -p output
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            -v "$PWD:/app/work" \
-            threagile/threagile \
-            -model /app/work/model/threagile.yaml \
-            -output /app/work/output -verbose
+      - name: Run Threagile analyze (merges attack-paths into the report)
+        run: ./scripts/run-threagile.sh
       - name: Upload report artifacts
         uses: actions/upload-artifact@v4
         with:
