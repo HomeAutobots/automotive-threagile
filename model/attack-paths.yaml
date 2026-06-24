@@ -48,6 +48,14 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      : severity: high
+        exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
       ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Inverter Motor Control [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0068'
       : severity: critical
         exploitation_likelihood: very-likely
@@ -104,6 +112,14 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      : severity: high
+        exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
       ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
       : severity: high
         exploitation_likelihood: likely
@@ -160,6 +176,14 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      : severity: critical
+        exploitation_likelihood: very-likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
       ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 8 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
       : severity: critical
         exploitation_likelihood: very-likely
@@ -216,6 +240,14 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      : severity: critical
+        exploitation_likelihood: very-likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
       ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
       : severity: critical
         exploitation_likelihood: very-likely
@@ -272,6 +304,14 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      : severity: high
+        exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
       ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
       : severity: high
         exploitation_likelihood: likely
@@ -328,6 +368,14 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      : severity: high
+        exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
       ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 8 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
       : severity: high
         exploitation_likelihood: likely
@@ -390,13 +438,14 @@ individual_risk_categories:
         - inverter
         - vcu
         most_relevant_technical_asset: zone-front
-      <b>Chokepoint</b> Chassis Zone Controller gates 2 safety-critical path(s):
+      <b>Chokepoint</b> Chassis Zone Controller gates 3 safety-critical path(s):
         severity: critical
         exploitation_likelihood: likely
         exploitation_impact: very-high
         data_breach_probability: possible
         data_breach_technical_assets:
         - brake-ecu
+        - flexray-actuator
         - steering-ecu
         most_relevant_technical_asset: zone-chassis
       <b>Chokepoint</b> Battery Management System gates 2 safety-critical path(s):

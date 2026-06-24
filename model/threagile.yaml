@@ -1,6 +1,6 @@
 threagile_version: 1.0.0
 
-title: Composite BEV Zonal L3+ (SEED)
+title: Composite BEV Zonal L3+
 date: 2025-06-23
 author:
   name: automotive-threat-model
@@ -11,6 +11,8 @@ management_summary_comment: >
   attack surface from connectivity through gateways/zones to the safety and charging
   domains. In-vehicle links are authored in the natural telemetry-up direction; multi-hop
   attacker reachability is computed by scripts/attack_path_analyzer.py.
+  SecOC (authenticity/integrity, no confidentiality) is modeled on flagship by-wire/
+  propulsion buses only; other safety buses remain unauthenticated by design.
 business_criticality: mission-critical
 
 # Tag vocabulary. Threagile requires every tag used on an asset or link to be declared here.
@@ -450,21 +452,29 @@ technical_assets:
     communication_links:
       To Brake ECU:
         target: brake-ecu
-        description: CAN FD to brake-by-wire ECU
+        description: CAN FD to brake-by-wire ECU; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
         protocol: binary
         usage: business
-        authentication: none
+        authentication: credentials
         authorization: none
         tags: [can-fd]
         data_assets_sent: [safety-control-messages]
       To Steering ECU:
         target: steering-ecu
-        description: CAN FD to steer-by-wire ECU
+        description: CAN FD to steer-by-wire ECU; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
+        protocol: binary
+        usage: business
+        authentication: credentials
+        authorization: none
+        tags: [can-fd]
+      To FlexRay Actuator:
+        target: flexray-actuator
+        description: Legacy FlexRay link to chassis actuator
         protocol: binary
         usage: business
         authentication: none
         authorization: none
-        tags: [can-fd]
+        tags: [flexray]
         data_assets_sent: [safety-control-messages]
 
   Front Zone Controller:
@@ -486,19 +496,19 @@ technical_assets:
     communication_links:
       To VCU:
         target: vcu
-        description: CAN FD to vehicle control unit
+        description: CAN FD to vehicle control unit; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
         protocol: binary
         usage: business
-        authentication: none
+        authentication: credentials
         authorization: none
         tags: [can-fd]
         data_assets_sent: [safety-control-messages]
       To Inverter:
         target: inverter
-        description: CAN FD to inverter / motor control unit
+        description: CAN FD to inverter / motor control unit; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
         protocol: binary
         usage: business
-        authentication: none
+        authentication: credentials
         authorization: none
         tags: [can-fd]
         data_assets_sent: [safety-control-messages]
@@ -655,19 +665,19 @@ technical_assets:
     communication_links:
       VCU To Inverter:
         target: inverter
-        description: CAN FD torque commands to inverter
+        description: CAN FD torque commands to inverter; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
         protocol: binary
         usage: business
-        authentication: none
+        authentication: credentials
         authorization: none
         tags: [can-fd]
         data_assets_sent: [safety-control-messages]
       VCU To BMS:
         target: bms
-        description: CAN FD to BMS for power/SoC limits
+        description: CAN FD to BMS for power/SoC limits; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
         protocol: binary
         usage: business
-        authentication: none
+        authentication: credentials
         authorization: none
         tags: [can-fd]
 
@@ -1041,13 +1051,141 @@ technical_assets:
         tags: [external, telematics]
         data_assets_sent: [pii-data]
 
+  Debug Port:
+    id: debug-port
+    description: On-board JTAG/UART debug port; physical hardware debug/console access
+    type: external-entity
+    usage: devops
+    size: component
+    technology: gateway
+    tags: [physical]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: operational
+    justification_cia_rating: Physical debug entry; console/memory access to ECU.
+    communication_links:
+      Debug To Central Gateway:
+        target: central-gateway
+        description: JTAG/UART debug/console access to central gateway
+        protocol: binary
+        usage: devops
+        authentication: none
+        authorization: none
+        tags: [physical]
+
+  Digital Key Fob:
+    id: digital-key
+    description: Digital key / key fob; BLE/UWB passive entry and start (relay-prone)
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: Off-board user-held RF token.
+    size: component
+    technology: iot-device
+    tags: [body, uwb, bluetooth, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: Driver
+    confidentiality: confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: RF entry token; relay/replay attack surface.
+    communication_links:
+      Key To Body Controller:
+        target: body-controller
+        description: BLE/UWB passive-entry access requests to body domain controller
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [body, uwb, bluetooth, external]
+
+  TPMS Sensors:
+    id: tpms
+    description: Tire-pressure monitoring sensors; spoofable RF telemetry
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: Wheel-mounted RF sensors; spoofable external input.
+    size: component
+    technology: iot-device
+    tags: [body, external]
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Unauthenticated RF; spoofable pressure telemetry.
+    communication_links:
+      TPMS To Body Controller:
+        target: body-controller
+        description: RF tire-pressure telemetry to body domain controller
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [body, external]
+
+  FlexRay Chassis Actuator:
+    id: flexray-actuator
+    description: Legacy chassis actuator/ECU on FlexRay (e.g. active suspension/damping)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, chassis, safety-critical]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: critical
+    justification_cia_rating: Legacy chassis actuation on unauthenticated FlexRay.
+    data_assets_processed: [safety-control-messages]
+
+  USB SD Media:
+    id: usb-media
+    description: USB / SD removable media presented to IVI (parser attack surface)
+    type: external-entity
+    usage: business
+    out_of_scope: true
+    justification_out_of_scope: User-supplied removable media; off-board content.
+    size: component
+    technology: file-server
+    tags: [external, physical]
+    internet: false
+    machine: physical
+    encryption: none
+    owner: Driver
+    confidentiality: internal
+    integrity: operational
+    availability: operational
+    justification_cia_rating: Untrusted media parsed by IVI; malformed-file attack surface.
+    communication_links:
+      Media To IVI:
+        target: ivi
+        description: USB/SD media files parsed by IVI (codecs/filesystems)
+        protocol: local-file-access
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [external, physical]
+
 trust_boundaries:
 
   OEM Cloud Off-Board:
     id: oem-cloud-boundary
     description: OEM cloud / off-board systems and mobile clients
     type: network-cloud-provider
-    technical_assets_inside: [oem-cloud, companion-app]
+    technical_assets_inside: [oem-cloud, companion-app, digital-key, tpms, usb-media]
 
   Connectivity Domain:
     id: connectivity-domain
@@ -1059,7 +1197,7 @@ trust_boundaries:
     id: gateway-enforcement
     description: Central gateway / zone-controller segmentation chokepoint
     type: network-virtual-lan
-    technical_assets_inside: [central-gateway, zone-chassis, zone-front, zone-rear, obd-port]
+    technical_assets_inside: [central-gateway, zone-chassis, zone-front, zone-rear, obd-port, debug-port]
 
   ADAS AD Domain:
     id: adas-domain
@@ -1071,7 +1209,7 @@ trust_boundaries:
     id: safety-domain
     description: Safety-critical chassis/powertrain segment
     type: network-virtual-lan
-    technical_assets_inside: [brake-ecu, steering-ecu, bms, vcu, inverter, dcdc-converter, airbag-ecu, body-controller, lin-actuators]
+    technical_assets_inside: [brake-ecu, steering-ecu, bms, vcu, inverter, dcdc-converter, airbag-ecu, body-controller, lin-actuators, flexray-actuator]
 
   Charging Domain:
     id: charging-domain
