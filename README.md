@@ -58,6 +58,36 @@ python3 scripts/attack_path_analyzer.py scripts/examples/jeep-demo.threagile.yam
 diff <(grep -v '^#' /tmp/demo.yaml) <(grep -v '^#' scripts/examples/jeep-demo.attack-paths.expected.yaml) && echo "analyzer OK"
 ```
 
+## Sample findings
+
+Generated from the current model by `./scripts/run-threagile.sh` and
+`scripts/attack_path_analyzer.py` (reproducible — your numbers will track the model).
+
+- **Threagile report:** **231 risks** across 20 categories — **25 critical, 29 high, 39
+  elevated, 67 medium, 71 low** — from Threagile's built-in rules plus the merged multi-hop
+  findings below. (The custom rules in `model/custom-risk-rules/` are validated separately via
+  the `cmd/script` harness; upstream auto-loading is unconfirmed, so they are not part of this
+  count.)
+- **Multi-hop attack paths:** 6 internet/RF-exposed entry assets (TCU, IVI, V2X, Wi-Fi/BT,
+  GNSS, charge port) reach 8 safety-critical crown jewels (brake, steer, VCU, inverter, BMS,
+  airbag, ADAS compute, FlexRay actuator) — **48 attack-path risks + 6 chokepoint risks**.
+- **Top chokepoints (min node cut)** — best places to add an authenticated, filtering boundary:
+
+  | Node | Jewel paths it gates |
+  |---|---|
+  | Central Gateway | 4 |
+  | Front Zone Controller | 3 |
+  | Chassis Zone Controller | 3 |
+  | Battery Management System / Vehicle Control Unit | 2 each |
+
+- **Per-hop technique tagging** — each path hop carries ATM + ATT&CK technique IDs, e.g.:
+
+  ```
+  TCU -> Central Gateway -> Chassis Zone Controller -> Brake ECU   [3 hops, weakest auth: none]
+  ATT&CK: T0883 -> T0867/T0866 -> ... -> T1692.001/T0849/T0831/T0880
+  ATM:    ATM-T0012 -> ATM-T0051/T0052 -> ... -> ATM-T0070/T0068
+  ```
+
 ## Modeling conventions
 
 - **Default insecure.** Every raw CAN / CAN FD / LIN / FlexRay / SENT link, and any Ethernet
