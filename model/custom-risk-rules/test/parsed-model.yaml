@@ -94,6 +94,12 @@ business_criticality: mission-critical
 #                       -> fires (keys dumpable / unsecured credentials)
 #   - keystore-hsm    : same but carrying the `hsm` tag (HSM/secure element)
 #                       -> must NOT fire (negative control)
+#
+#   removable-media-ingress (removable-media link without content validation):
+#   - media-host           : in-scope IVI originating a `removable-media`-tagged link with
+#                            authentication none -> fires (untrusted media ingress/exfil)
+#   - media-host-validated : same but the link uses authentication client-certificate
+#                            (signed/validated content) -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -1057,3 +1063,77 @@ technical_assets:
             - hsm
         data_assets_processed:
             - crypto-material
+    media-host:
+        id: media-host
+        title: Head Unit with Unvalidated USB/SD Interface
+        description: In-scope IVI originating a removable-media link with no content validation -> ingress/exfil vector.
+        type: process
+        size: application
+        technologies:
+            - name: infotainment
+              description: In-vehicle infotainment
+              attributes:
+                infotainment: true
+        machine: physical
+        owner: OEM
+        confidentiality: restricted
+        integrity: important
+        availability: operational
+        justification_cia_rating: |
+            Parses untrusted USB/SD media in a privileged context; an ingress and exfil channel.
+        tags:
+            - infotainment
+            - ecu
+        data_assets_processed:
+            - telematics-telemetry
+        communication_links:
+            - id: media-host>media
+              source_id: media-host
+              target_id: chassis-zone-controller
+              title: USB/SD Host Interface (unvalidated)
+              description: Removable-media interface parsing untrusted media with no signature/sandbox validation.
+              protocol: local-file-access
+              tags:
+                - removable-media
+                - physical
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - telematics-telemetry
+    media-host-validated:
+        id: media-host-validated
+        title: Head Unit with Validated Media (negative control)
+        description: In-scope IVI whose removable-media link enforces signed/validated content (authentication client-certificate); must NOT trigger.
+        type: process
+        size: application
+        technologies:
+            - name: infotainment
+              description: In-vehicle infotainment
+              attributes:
+                infotainment: true
+        machine: physical
+        owner: OEM
+        confidentiality: restricted
+        integrity: important
+        availability: operational
+        justification_cia_rating: |
+            Removable media is validated/signed and parsed in a sandbox (negative control).
+        tags:
+            - infotainment
+            - ecu
+        data_assets_processed:
+            - telematics-telemetry
+        communication_links:
+            - id: media-host-validated>media
+              source_id: media-host-validated
+              target_id: chassis-zone-controller
+              title: USB/SD Host Interface (validated)
+              description: Removable-media interface that only accepts signed/validated content.
+              protocol: local-file-access
+              tags:
+                - removable-media
+                - physical
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - telematics-telemetry

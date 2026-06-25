@@ -1,0 +1,102 @@
+id: removable-media-ingress
+title: Unvalidated Removable-Media Interface (USB / SD)
+function: architecture
+stride: tampering
+cwe: 345
+description:
+  A removable-media host interface (USB, SD card) on an in-vehicle compute node parses
+  user-supplied files — filesystems, codecs, firmware images, playlists — and can also be
+  used to copy data off the vehicle. When the interface accepts media without validating the
+  content (no signature/provenance check, no sandboxed parsing, autorun-style handling), it is
+  both an initial-access vector (a malformed file or malicious payload compromises the parser)
+  and an exfiltration channel for on-board data. This maps to Auto-ISAC ATM "Exploit via
+  Removable Media" (ATM-T0013) and "Removable Media" exfiltration (ATM-T0006), and to MITRE
+  ATT&CK T1091 "Replication Through Removable Media" / T1052 "Exfiltration over Physical Medium".
+impact:
+  If this risk is unmitigated, an attacker with brief physical access can plug in crafted media
+  to gain code execution on the head unit or telematics stack, or copy sensitive on-board data
+  (PII, keys, logs) off the vehicle, without any network exposure.
+asvs:
+  V12 - File and Resources Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+action:
+  Validated and Sandboxed Removable Media
+mitigation:
+  Treat removable media as untrusted — parse it in a sandboxed/least-privilege component,
+  validate file types and signatures, disable autorun and auto-execution, and require signed
+  packages for any firmware/update delivered via media. Restrict or disable data egress to
+  media. Model the link with a real authentication value (signed/validated content) once such
+  content validation is actually designed in.
+check:
+  Do all removable-media (`removable-media`-tagged) interfaces validate content (signed /
+  sandboxed), i.e. the link is not modeled with authentication "none"?
+detection_logic:
+  In-scope technical assets that originate a communication link tagged `removable-media` whose
+  authentication is absent/"none". Because zero-value enums are dropped in the parsed model,
+  authentication is treated as absent unless the link declares a real method (credentials,
+  session-id, token, client-certificate, two-factor, externalized) representing validated or
+  signed media content.
+risk_assessment:
+  The rating depends on the privilege of the parsing component and the sensitivity of data
+  reachable for egress. A head unit that parses untrusted media in a privileged context is
+  elevated-to-high severity.
+false_positives:
+  Removable-media interfaces that validate content (signed packages, sandboxed parsers —
+  modeled with a real authentication value) are false positives. A read-only media interface
+  that cannot parse complex formats or reach sensitive data may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unvalidated Removable-Media Interface</b> at <b>{tech_asset.title}</b>: a USB/SD interface parses untrusted media without validation"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # content not validated/signed (none == absent)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: externalized
+                  # the link is a removable-media (USB/SD) interface
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      equal:
+                        first: "{link_tag}"
+                        second: removable-media
+          then:
+            return: true

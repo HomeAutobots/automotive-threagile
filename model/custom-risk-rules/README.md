@@ -31,6 +31,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `safety-function-without-redundancy.yaml` | In-scope asset tagged `safety-critical` that is not modeled `redundant: true` — a single point of failure with no fail-operational fallback, so one denial-of-service action (bus flood, ECU crash, sensor jam) removes the function. Fills the availability/DoS gap none of the other (integrity/auth) rules cover. | denial-of-service / CWE-400 |
 | `relay-vulnerable-passive-entry.yaml` | In-scope asset that originates a short-range (`uwb`/`bluetooth`) link to a `body`-tagged access controller that does NOT carry the `distance-bounding` tag — passive entry/start without secure ranging is relay-attack vulnerable. Keys on absence of distance bounding, NOT authentication, because crypto auth does not stop a relay (the legitimate exchange is simply forwarded). | spoofing / CWE-290 |
 | `unprotected-key-storage.yaml` | In-scope asset that processes/stores the `crypto-material` data asset (long-term keys/certs) but does NOT carry the `hsm` tag — key material held without hardware-backed storage is dumpable on code-exec or physical access, breaking every trust it anchors (firmware signing, backend auth, SecOC, secure boot, V2X). | information-disclosure / CWE-320 |
+| `removable-media-ingress.yaml` | In-scope asset that originates a `removable-media`-tagged (USB/SD) link with no authentication — a media interface that parses untrusted content without signature/sandbox validation is both an initial-access vector (malformed-file parser exploit) and a data-exfiltration channel. | tampering / CWE-345 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -126,6 +127,10 @@ be confirmed to fire on the intended asset and skip the controls:
   real `encryption` value and the `secure-boot` tag, so it trips neither internet-exposed rule.
   `keystore-hsm` is the negative control: same key holding but carries the `hsm` tag, so it must
   NOT fire.
+- `media-host` — in-scope IVI originating a `removable-media`-tagged USB/SD link with
+  authentication none → fires `removable-media-ingress` (untrusted-media ingress/exfil).
+  `media-host-validated` is the negative control: its removable-media link uses authentication
+  `client-certificate` (signed/validated content), so it must NOT fire.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -143,7 +148,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `safety-function-without-redundancy` -> `nonredundant-inverter` (and the other safety-critical
 fixture assets) but NOT `redundant-actuator` (modeled `redundant: true`);
 `relay-vulnerable-passive-entry` -> `keyfob-relay` only (skips the distance-bounded `keyfob-ranged`);
-`unprotected-key-storage` -> `keystore-no-hsm` only (skips the `hsm`-tagged `keystore-hsm`).
+`unprotected-key-storage` -> `keystore-no-hsm` only (skips the `hsm`-tagged `keystore-hsm`);
+`removable-media-ingress` -> `media-host` only (skips the validated `media-host-validated`).
 
 ## Caveat (still applies)
 

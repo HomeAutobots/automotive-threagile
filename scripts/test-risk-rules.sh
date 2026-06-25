@@ -40,6 +40,7 @@ unauthenticated-someip-service-link|unauthenticated-someip-service-link@someip-e
 safety-function-without-redundancy|safety-function-without-redundancy@nonredundant-inverter|redundant-actuator
 relay-vulnerable-passive-entry|relay-vulnerable-passive-entry@keyfob-relay|keyfob-ranged
 unprotected-key-storage|unprotected-key-storage@keystore-no-hsm|keystore-hsm
+removable-media-ingress|removable-media-ingress@media-host|media-host-validated
 "
 
 fail=0

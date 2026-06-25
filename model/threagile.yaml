@@ -48,6 +48,7 @@ tags_available:
   - tls-mutual
   - distance-bounding
   - hsm
+  - removable-media
   - external
   - physical
   - secure-boot
@@ -231,6 +232,19 @@ technical_assets:
         authentication: none
         authorization: none
         tags: [ethernet, some-ip]
+      USB SD Host Interface:
+        target: usb-media
+        description: >
+          IVI USB/SD host port: reads/parses user-supplied media (codecs, filesystems) and
+          can write data out. No content validation/signing or sandbox attestation is modeled
+          (authentication none), so untrusted media is an ingress and exfiltration vector.
+        protocol: local-file-access
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [removable-media, physical, external]
+        data_assets_sent: [pii-data]
+        data_assets_received: [ecu-firmware]
 
   V2X Module:
     id: v2x-module
