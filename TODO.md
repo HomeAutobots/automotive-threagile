@@ -62,9 +62,12 @@ Movement over Automotive Ethernet**, **Affect-Vehicle-Function via DoS/availabil
       charge controller) and marked V2X + central gateway `hsm`. The internet-exposed TCU and
       charge controller fire (keys without HSM). Maps ATM-T0039 (ECU Credential Dumping),
       ATM-T0040 (Unsecured Credentials), ATM-T0075. Harness-validated + CI-enforced.
-- [ ] `removable-media-ingress` — unauthenticated `physical` removable-media (USB/SD) link
-      into infotainment/telematics (code/data ingress + exfil). Maps ATM-T0013/T0006.
-      (Needs a `removable-media` link tag — would expand the vocabulary first.)
+- [x] `removable-media-ingress` — a `removable-media` (USB/SD) link with `authentication: none`
+      (content not signed/validated) — code/data ingress + exfil. Added a `removable-media`
+      link tag and modeled the IVI USB/SD host interface. Maps ATM-T0013 (Exploit via Removable
+      Media), ATM-T0006 (Removable Media exfil). Harness-validated + CI-enforced.
+
+All five ATM-derived candidates are now implemented (15 custom rules total).
 
 ## Model (`model/threagile.yaml`)
 - [x] Mark **SecOC-authenticated** links — modeled (as `authentication: credentials` +

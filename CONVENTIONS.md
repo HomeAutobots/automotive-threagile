@@ -16,7 +16,7 @@ Every tag used on an asset or communication link must be declared in the model's
 | In-vehicle buses | `can` `can-fd` `lin` `flexray` `ethernet` `some-ip` `doip` |
 | External / RF interfaces | `obd-ii` `v2x` `cellular` `bluetooth` `uwb` `gnss` `ota` `iso15118` |
 | Exposure / physical | `external` `physical` |
-| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` `hsm` |
+| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` `hsm` `removable-media` |
 
 ## Modeling conventions
 
@@ -55,6 +55,10 @@ Every tag used on an asset or communication link must be declared in the model's
   `crypto-material` data asset in their `data_assets_processed`/`data_assets_stored`, and add
   the `hsm` tag only when that material is held in hardware-backed storage (HSM/SHE/secure
   element). A key-holder without `hsm` is what `unprotected-key-storage` flags.
+- **Removable media.** Tag a USB/SD host-interface link `removable-media`. Model it
+  `authentication: none` unless the media content is signed/validated and sandbox-parsed (in
+  which case use a real authentication value); an unvalidated one is what
+  `removable-media-ingress` flags.
 
 ## How each custom rule keys on the model
 
@@ -77,6 +81,7 @@ Tag your model per the above and these rules apply automatically (in
 | `safety-function-without-redundancy` | a `safety-critical`-tagged asset is not modeled `redundant: true` (single-point DoS exposure) |
 | `relay-vulnerable-passive-entry` | a `uwb`/`bluetooth` link to a `body`-tagged target lacks the `distance-bounding` tag (relay attack) |
 | `unprotected-key-storage` | an asset holding the `crypto-material` data asset lacks the `hsm` tag (keys not in hardware-backed storage) |
+| `removable-media-ingress` | a `removable-media` (USB/SD) link has `authentication: none` (content not signed/validated) |
 
 ## Running it
 
