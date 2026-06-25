@@ -16,7 +16,7 @@ Every tag used on an asset or communication link must be declared in the model's
 | In-vehicle buses | `can` `can-fd` `lin` `flexray` `ethernet` `some-ip` `doip` |
 | External / RF interfaces | `obd-ii` `v2x` `cellular` `bluetooth` `uwb` `gnss` `ota` `iso15118` |
 | Exposure / physical | `external` `physical` |
-| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` `hsm` `removable-media` |
+| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` `hsm` `removable-media` `firmware-signing` |
 
 ## Modeling conventions
 
@@ -59,6 +59,11 @@ Every tag used on an asset or communication link must be declared in the model's
   `authentication: none` unless the media content is signed/validated and sandbox-parsed (in
   which case use a real authentication value); an unvalidated one is what
   `removable-media-ingress` flags.
+- **Firmware signing.** Mark assets that receive/install firmware by listing the
+  `ecu-firmware` data asset in their `data_assets_processed`/`data_assets_stored`, and add the
+  `firmware-signing` tag only when the asset verifies signed images on-device (Uptane-style
+  full/partial verification). A firmware-handler without it is what `unverified-firmware-update`
+  flags — transport security (TLS) does not substitute for on-device image verification.
 
 ## How each custom rule keys on the model
 
@@ -82,6 +87,7 @@ Tag your model per the above and these rules apply automatically (in
 | `relay-vulnerable-passive-entry` | a `uwb`/`bluetooth` link to a `body`-tagged target lacks the `distance-bounding` tag (relay attack) |
 | `unprotected-key-storage` | an asset holding the `crypto-material` data asset lacks the `hsm` tag (keys not in hardware-backed storage) |
 | `removable-media-ingress` | a `removable-media` (USB/SD) link has `authentication: none` (content not signed/validated) |
+| `unverified-firmware-update` | an asset holding the `ecu-firmware` data asset lacks the `firmware-signing` tag (no on-device image verification) |
 
 ## Running it
 
