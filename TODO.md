@@ -50,9 +50,12 @@ Movement over Automotive Ethernet**, **Affect-Vehicle-Function via DoS/availabil
       ATM-T0072 (DoS on Vehicle Function), ATM-T0002. Harness-validated + CI-enforced. The
       by-wire actuators (brake-ecu, steering-ecu) are now modeled `redundant: true`
       (ASIL-D fail-operational); the remaining safety functions fire as DoS single-points.
-- [ ] `relay-vulnerable-passive-entry` — `uwb`/`bluetooth` access link reaching a `body`
-      lock/entry asset with no authentication / distance-bounding. Maps ATM-T0007 (Relay
-      Communications), ATM-T0065. (May need a `distance-bounding` capability tag.)
+- [x] `relay-vulnerable-passive-entry` — `uwb`/`bluetooth` access link to a `body`-tagged
+      controller without the `distance-bounding` tag. Keys on absence of secure ranging, NOT
+      authentication (crypto auth does not stop a relay). Added a `distance-bounding`
+      capability tag to the vocabulary. Maps ATM-T0007 (Relay Communications), ATM-T0065.
+      Harness-validated + CI-enforced. (Fires on the real model's digital-key + Wi-Fi/BT
+      passive-entry links to the body controller.)
 - [ ] `unprotected-key-storage` — internet-exposed asset that stores crypto/credential data
       (e.g. the `crypto-material` data asset) without `secure-boot` / hardware key storage.
       Maps ATM-T0039 (ECU Credential Dumping), ATM-T0040 (Unsecured Credentials), ATM-T0075.
