@@ -28,6 +28,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `unencrypted-ota-channel.yaml` | In-scope asset that originates a communication link tagged `ota` whose transport is not encrypted — `protocol` is not one of the encrypted protocols (`https`/`wss`/`binary-encrypted`/`text-encrypted`/`ssh`/`ssh-tunnel`/`sftp`/`scp`/`ftps`) and the link is not `vpn: true`. A cleartext OTA channel exposes the firmware payload and removes transport-layer MITM protection for software/firmware updates. Keys on the existing `ota` link tag, so no new model field is needed. | tampering / CWE-319 |
 | `iso15118-server-only-tls.yaml` | In-scope asset that originates a communication link tagged `iso15118` (EV↔EVSE Plug & Charge) that is NOT mutual TLS — it lacks the `tls-mutual` tag and its authentication is not `client-certificate`. Server-only TLS (ISO 15118-2; marked explicitly with `tls-server-only`) leaves the charging session without mutual authentication and open to adversary-in-the-middle. Per-link TLS directionality is modeled via the `tls-server-only`/`tls-mutual` link tags. | spoofing / CWE-295 |
 | `unauthenticated-someip-service-link.yaml` | In-scope asset that originates a communication link tagged `some-ip` with no authentication — service-oriented Automotive Ethernet (SOME/IP / SOME/IP-SD) has no built-in auth, so an unauthenticated link permits spoofed service offers, RPC/event injection, service-graph discovery, and lateral movement across zonal/domain boundaries. Fills the Ethernet Discovery/Lateral-Movement gap left by the CAN-focused safety-bus rules. | elevation-of-privilege / CWE-306 |
+| `safety-function-without-redundancy.yaml` | In-scope asset tagged `safety-critical` that is not modeled `redundant: true` — a single point of failure with no fail-operational fallback, so one denial-of-service action (bus flood, ECU crash, sensor jam) removes the function. Fills the availability/DoS gap none of the other (integrity/auth) rules cover. | denial-of-service / CWE-400 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -109,6 +110,10 @@ be confirmed to fire on the intended asset and skip the controls:
   movement). `someip-secure` is the negative control: the same `some-ip` link carried over
   mutual TLS (`authentication: client-certificate`) must NOT fire. Both are tagged only
   `ecu`/`ethernet` (no exposure/gateway/safety tag), so they trip no other rule.
+- `nonredundant-inverter` — in-scope `safety-critical` asset with no `redundant: true` →
+  fires `safety-function-without-redundancy` (single-point DoS exposure). `redundant-actuator`
+  is the negative control: same safety-critical tag but modeled `redundant: true`, so it must
+  NOT fire. Neither originates a link, so they trip no bus/diagnostic rule.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -122,7 +127,9 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `rogue-telematics`, and the internet-`false` `infotainment-offline`);
 `unencrypted-ota-channel` -> `ota-backend-cleartext` only (skips the `https` `ota-backend-tls`);
 `iso15118-server-only-tls` -> `evcc-server-only` only (skips the mutual-TLS `evcc-mutual-tls`);
-`unauthenticated-someip-service-link` -> `someip-ecu` only (skips the mutual-TLS `someip-secure`).
+`unauthenticated-someip-service-link` -> `someip-ecu` only (skips the mutual-TLS `someip-secure`);
+`safety-function-without-redundancy` -> `nonredundant-inverter` (and the other safety-critical
+fixture assets) but NOT `redundant-actuator` (modeled `redundant: true`).
 
 ## Caveat (still applies)
 

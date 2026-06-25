@@ -44,6 +44,9 @@ Every tag used on an asset or communication link must be declared in the model's
   also be expressed as `authentication: client-certificate`. Tag the EV↔EVSE ISO 15118
   Plug & Charge link `iso15118`; a server-only such link is what `iso15118-server-only-tls`
   flags.
+- **Redundancy.** Set `redundant: true` on a `safety-critical` asset only when it genuinely
+  has a fail-operational fallback (redundant ECU/actuation path). A safety-critical asset
+  without it is what `safety-function-without-redundancy` flags (single-point DoS exposure).
 
 ## How each custom rule keys on the model
 
@@ -63,6 +66,7 @@ Tag your model per the above and these rules apply automatically (in
 | `unencrypted-ota-channel` | an `ota`-tagged link uses a cleartext transport (not an encrypted `protocol` and not `vpn: true`) |
 | `iso15118-server-only-tls` | an `iso15118`-tagged link is not mutual TLS (no `tls-mutual` tag and auth not `client-certificate`) |
 | `unauthenticated-someip-service-link` | a `some-ip`-tagged service link has `authentication: none` (spoofable SOME/IP-SD / RPC) |
+| `safety-function-without-redundancy` | a `safety-critical`-tagged asset is not modeled `redundant: true` (single-point DoS exposure) |
 
 ## Running it
 

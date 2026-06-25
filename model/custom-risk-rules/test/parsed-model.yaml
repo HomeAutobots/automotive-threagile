@@ -75,6 +75,12 @@ business_criticality: mission-critical
 #                     none -> fires (spoofable service discovery/RPC, lateral movement)
 #   - someip-secure : in-scope ECU whose `some-ip` link uses authentication client-certificate
 #                     (mutual TLS) -> must NOT fire (negative control)
+#
+#   safety-function-without-redundancy (safety-critical asset with no fail-operational path):
+#   - nonredundant-inverter : in-scope `safety-critical` asset with no `redundant: true`
+#                             -> fires (single-point DoS removes the function)
+#   - redundant-actuator    : in-scope `safety-critical` asset modeled `redundant: true`
+#                             -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -824,3 +830,52 @@ technical_assets:
               authorization: technical-user
               data_assets_sent:
                 - telematics-telemetry
+    nonredundant-inverter:
+        id: nonredundant-inverter
+        title: Traction Inverter Without Redundancy
+        description: In-scope safety-critical actuator with no fail-operational fallback (no redundant path) -> single-point DoS removes the function.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Safety-critical propulsion actuator; loss of availability via DoS is hazardous and has no fallback.
+        tags:
+            - ecu
+            - powertrain
+            - safety-critical
+        data_assets_processed:
+            - vehicle-control-commands
+    redundant-actuator:
+        id: redundant-actuator
+        title: Fail-Operational Brake Actuator (negative control)
+        description: In-scope safety-critical actuator modeled as redundant (fail-operational); must NOT trigger.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        redundant: true
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Safety-critical actuator with a redundant fail-operational path (negative control).
+        tags:
+            - ecu
+            - chassis
+            - safety-critical
+        data_assets_processed:
+            - vehicle-control-commands

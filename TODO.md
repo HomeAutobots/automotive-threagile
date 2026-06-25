@@ -44,10 +44,12 @@ Movement over Automotive Ethernet**, **Affect-Vehicle-Function via DoS/availabil
       `authentication: none` (SOME/IP has no built-in auth; spoofable SD/RPC). Fills the
       Ethernet Discovery/Lateral-Movement gap. Maps ATM-T0044/T0048/T0049 (discovery),
       ATM-T0051/T0053 (lateral movement), ATM-T0038 (sniffing). Harness-validated + CI-enforced.
-- [ ] `safety-function-without-redundancy` — asset tagged `safety-critical` with
-      mission/critical availability but `redundant: false` (or no fallback) — exposes the
-      function to bus/endpoint DoS. Fills the **availability** gap none of the current rules
-      cover. Maps ATM-T0068 (CAN Bus DoS), ATM-T0072 (DoS on Vehicle Function), ATM-T0002.
+- [x] `safety-function-without-redundancy` — asset tagged `safety-critical` not modeled
+      `redundant: true` — exposes the function to single-point bus/endpoint DoS. Fills the
+      **availability** gap none of the other rules cover. Maps ATM-T0068 (CAN Bus DoS),
+      ATM-T0072 (DoS on Vehicle Function), ATM-T0002. Harness-validated + CI-enforced. The
+      by-wire actuators (brake-ecu, steering-ecu) are now modeled `redundant: true`
+      (ASIL-D fail-operational); the remaining safety functions fire as DoS single-points.
 - [ ] `relay-vulnerable-passive-entry` — `uwb`/`bluetooth` access link reaching a `body`
       lock/entry asset with no authentication / distance-bounding. Maps ATM-T0007 (Relay
       Communications), ATM-T0065. (May need a `distance-bounding` capability tag.)
