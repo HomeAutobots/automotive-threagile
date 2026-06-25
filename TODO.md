@@ -26,7 +26,11 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
       link tag, so no new model field was needed. Harness-validated + CI-enforced. (The two
       modeled OTA links already use https + client-cert, so this fires on none of them today —
       it is a guardrail against a future cleartext OTA channel.)
-- [ ] `iso15118-server-only-tls` — *deferred:* needs per-link TLS directionality not modeled.
+- [x] `iso15118-server-only-tls` — an `iso15118`-tagged charging link that is not mutual TLS
+      (no `tls-mutual` tag and authentication not `client-certificate`). Per-link TLS
+      directionality is now modeled with the `tls-server-only`/`tls-mutual` link tags, so no
+      invented field was needed. Harness-validated + CI-enforced. (Fires on the real model's
+      EVCC->EVSE link, which is modeled as ISO 15118-2 server-only TLS.)
 - [x] `internet-exposed-ecu-no-secure-boot` — internet-exposed ECU/compute lacking the
       `secure-boot` tag. Harness-validated + CI-enforced.
 
@@ -41,6 +45,10 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 - [x] Model **secure-boot** — added a `secure-boot` tag (vocabulary expanded) on the main
       compute, gateways/zones, and flagship safety ECUs; the simpler RF modules + charge
       controller deliberately lack it (the gap the no-secure-boot rule flags).
+- [x] Model **per-link TLS directionality** — added `iso15118`, `tls-server-only`, and
+      `tls-mutual` link tags (vocabulary expanded); the EVCC->EVSE ISO 15118 link is corrected
+      to originate from the in-scope charge controller and modeled as ISO 15118-2 server-only
+      TLS (`tls-server-only`, authentication none).
 - [ ] Model **firmware-signing / Uptane** as a distinct property (partially implied today by
       the OTA client-cert link + crypto-material data asset) if a dedicated rule is wanted.
 - [x] Drop the `(SEED)` suffix from the title (now `Composite BEV Zonal L3+`).

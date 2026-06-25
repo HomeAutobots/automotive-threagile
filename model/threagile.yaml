@@ -43,6 +43,9 @@ tags_available:
   - uwb
   - gnss
   - ota
+  - iso15118
+  - tls-server-only
+  - tls-mutual
   - external
   - physical
   - secure-boot
@@ -753,6 +756,19 @@ technical_assets:
     justification_cia_rating: Terminates external charging interface; holds contract certs.
     data_assets_processed: [crypto-material]
     communication_links:
+      ISO 15118 To EVSE:
+        target: evse
+        description: >
+          EVCC->SECC ISO 15118 Plug & Charge over CCS PLC. Modeled as ISO 15118-2
+          server-only TLS (tls-server-only): the SECC presents a TLS server cert but the
+          EVCC is NOT authenticated at the TLS layer (no mutual auth). ISO 15118-20 would
+          upgrade this to mutual TLS (tls-mutual + authentication client-certificate).
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: technical-user
+        tags: [charging, external, iso15118, tls-server-only]
+        data_assets_sent: [charging-billing-data]
       To Battery Management System:
         target: bms
         description: Charging V/I and limits to BMS over CAN
@@ -985,16 +1001,8 @@ technical_assets:
     integrity: important
     availability: operational
     justification_cia_rating: External charging peer; 15118 contract-cert exchange.
-    communication_links:
-      EVSE To Charge Port:
-        target: charge-controller
-        description: ISO 15118 PnC over CCS PLC (TLS server-auth / mutual -20)
-        protocol: https
-        usage: business
-        authentication: client-certificate
-        authorization: technical-user
-        tags: [charging, external]
-        data_assets_sent: [charging-billing-data]
+    # The ISO 15118 session is modeled in its technically-accurate direction as an
+    # outbound EVCC->SECC link from the in-scope Charge Port Controller (charge-controller).
 
   OBD-II Port:
     id: obd-port
