@@ -21,7 +21,11 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 - [x] `reachable-debug-port` — in-scope asset with a `physical`-tagged unauthenticated debug
       (JTAG/UART) link; distinct from `reachable-unauthenticated-diagnostics` (OBD/DoIP).
       Harness-validated + CI-enforced.
-- [ ] `unencrypted-ota-channel` — *deferred:* needs an OTA-update flag not in the model.
+- [x] `unencrypted-ota-channel` — OTA-tagged (`ota`) link carried over a cleartext transport
+      (not https/wss/*-encrypted/ssh/sftp/scp/ftps and not vpn). Keys on the existing `ota`
+      link tag, so no new model field was needed. Harness-validated + CI-enforced. (The two
+      modeled OTA links already use https + client-cert, so this fires on none of them today —
+      it is a guardrail against a future cleartext OTA channel.)
 - [ ] `iso15118-server-only-tls` — *deferred:* needs per-link TLS directionality not modeled.
 - [x] `internet-exposed-ecu-no-secure-boot` — internet-exposed ECU/compute lacking the
       `secure-boot` tag. Harness-validated + CI-enforced.

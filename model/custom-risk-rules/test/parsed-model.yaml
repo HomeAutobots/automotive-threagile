@@ -55,6 +55,14 @@ business_criticality: mission-critical
 #                                    `secure-boot` tag -> must NOT fire (negative control)
 #     (telematics-unit and rogue-telematics are given the `secure-boot` tag so they do
 #      NOT also fire this rule; their other documented matches are unaffected.)
+#
+#   unencrypted-ota-channel (OTA-tagged link over a cleartext transport):
+#   - ota-backend-cleartext : originates an `ota`-tagged firmware link whose protocol is
+#                             cleartext (unknown-protocol), even though it is
+#                             client-certificate authenticated -> fires (no transport
+#                             confidentiality/MITM protection for the firmware payload)
+#   - ota-backend-tls       : originates an `ota`-tagged firmware link over `https`
+#                             -> must NOT fire (negative control: encrypted transport)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -578,3 +586,77 @@ technical_assets:
             - secure-boot
         data_assets_processed:
             - telematics-telemetry
+    ota-backend-cleartext:
+        id: ota-backend-cleartext
+        title: OTA Backend over Cleartext Transport
+        description: OTA update server whose firmware-distribution link rides a cleartext transport (no TLS/DTLS/VPN); client-cert authenticated but not encrypted -> firmware is exposed and MITM-able.
+        type: process
+        size: application
+        technologies:
+            - name: application-server
+              description: OTA update backend
+              attributes:
+                application-server: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: important
+        justification_cia_rating: |
+            Distributes ECU firmware; a cleartext channel removes transport-layer protection for the payload.
+        tags:
+            - telematics
+            - ota
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: ota-backend-cleartext>firmware
+              source_id: ota-backend-cleartext
+              target_id: chassis-zone-controller
+              title: OTA Firmware Distribution (cleartext)
+              description: Firmware image delivered over a cleartext transport despite client-certificate auth.
+              protocol: unknown-protocol
+              tags:
+                - ota
+                - ethernet
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - diagnostic-data
+    ota-backend-tls:
+        id: ota-backend-tls
+        title: Hardened OTA Backend over TLS (negative control)
+        description: OTA update server whose firmware-distribution link is carried over https (TLS); must NOT trigger.
+        type: process
+        size: application
+        technologies:
+            - name: application-server
+              description: OTA update backend
+              attributes:
+                application-server: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: important
+        justification_cia_rating: |
+            Distributes ECU firmware over an encrypted transport (negative control).
+        tags:
+            - telematics
+            - ota
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: ota-backend-tls>firmware
+              source_id: ota-backend-tls
+              target_id: chassis-zone-controller
+              title: OTA Firmware Distribution (TLS)
+              description: Firmware image delivered over https with mutual authentication.
+              protocol: https
+              tags:
+                - ota
+                - ethernet
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - diagnostic-data

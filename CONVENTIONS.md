@@ -35,6 +35,9 @@ Every tag used on an asset or communication link must be declared in the model's
   is recommended). Absence of it on a safety bus is what `missing-secoc-on-safety-bus` flags.
 - **Secure boot.** Tag assets that implement a verified/secure boot chain with `secure-boot`.
   Internet-exposed compute lacking it is what `internet-exposed-ecu-no-secure-boot` flags.
+- **OTA.** Tag any software/firmware update link `ota`. Model the transport honestly via
+  `protocol` (`https`/`wss`/`*-encrypted` for TLS/DTLS, or `vpn: true` for a tunnel); a
+  cleartext `protocol` on an `ota` link is what `unencrypted-ota-channel` flags.
 
 ## How each custom rule keys on the model
 
@@ -51,6 +54,7 @@ Tag your model per the above and these rules apply automatically (in
 | `internet-exposed-ecu-no-secure-boot` | an `internet: true` compute asset (`ecu`/`telematics`/`infotainment`/`connectivity`) lacks the `secure-boot` tag |
 | `reachable-unauthenticated-diagnostics` | an `obd-ii`/`doip` link has `authentication: none` |
 | `reachable-debug-port` | a `physical`-tagged (JTAG/UART) link has `authentication: none` |
+| `unencrypted-ota-channel` | an `ota`-tagged link uses a cleartext transport (not an encrypted `protocol` and not `vpn: true`) |
 
 ## Running it
 

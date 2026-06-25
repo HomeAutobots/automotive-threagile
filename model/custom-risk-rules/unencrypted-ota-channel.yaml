@@ -1,0 +1,114 @@
+id: unencrypted-ota-channel
+title: Unencrypted Over-the-Air (OTA) Update Channel
+function: architecture
+stride: tampering
+cwe: 319
+description:
+  Over-the-air software/firmware update channels deliver executable code to in-vehicle
+  ECUs. When such a channel runs over a cleartext transport (no TLS/DTLS, no encrypted
+  fieldbus, no VPN tunnel), the firmware payload and update metadata travel in the clear.
+  An attacker on the cellular/Wi-Fi/backhaul path (or pivoting from a compromised node)
+  can read the image to aid reverse engineering and, more importantly, machine-in-the-middle
+  the channel to strip, downgrade, or substitute the update where application-layer signing
+  is absent or weak. This maps to MITRE ATT&CK T1040 "Network Sniffing" /
+  ATT&CK for ICS T0843 "Modify Program" / T0857 (T1693.001) "System Firmware", and
+  Auto-ISAC ATM "Intercept Vehicle Communications" and "Compromise OTA Update Process".
+impact:
+  If this risk is unmitigated, an attacker can intercept firmware images and update
+  manifests, and on an unauthenticated/unsigned channel deliver malicious firmware to one
+  or many ECUs at fleet scale, achieving durable, possibly safety-impacting control of the
+  vehicle and undermining the integrity of the entire update pipeline.
+asvs:
+  V9 - Communication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
+action:
+  Encrypted and Authenticated OTA Transport
+mitigation:
+  Carry every OTA channel over TLS/DTLS (or an encrypted fieldbus / VPN tunnel) with
+  certificate pinning and mutual authentication, in addition to end-to-end image signing
+  and anti-rollback (e.g. an Uptane-style director/image-repo split). Encryption alone is
+  not sufficient for OTA integrity, but a cleartext channel removes the transport-layer
+  defense entirely. Do not model an OTA link with a cleartext protocol once TLS/DTLS or a
+  tunnel is designed in.
+check:
+  Are all communication links tagged "ota" carried over an encrypted transport
+  (TLS/DTLS, an encrypted fieldbus, or a VPN), i.e. not a cleartext protocol?
+detection_logic:
+  In-scope technical assets that originate at least one communication link tagged "ota"
+  whose protocol is not one of the encrypted transports (https, wss, binary-encrypted,
+  text-encrypted, ssh, ssh-tunnel, sftp, scp, ftps) and that is not carried over a VPN.
+risk_assessment:
+  The risk rating depends on which ECUs the channel can reprogram and the strength of
+  any application-layer signing. An OTA path that can flash safety-critical ECUs over a
+  cleartext transport is high severity.
+false_positives:
+  OTA links carried over an encrypted transport or a VPN tunnel (modeled with an encrypted
+  protocol or vpn true) are false positives. A telemetry-only "ota"-tagged link that can
+  never deliver code may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unencrypted OTA Update Channel</b> at <b>{tech_asset.title}</b>: an OTA-tagged link uses a cleartext transport"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # the link is an OTA software/firmware update channel
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      equal:
+                        first: "{link_tag}"
+                        second: ota
+                  # the link is not carried over a VPN tunnel
+                  - false: "{link.vpn}"
+                  # the transport is not an encrypted protocol (cleartext == anything else)
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: https
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: wss
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: binary-encrypted
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: text-encrypted
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: ssh
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: ssh-tunnel
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: sftp
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: scp
+                  - not-equal:
+                      first: "{link.protocol}"
+                      second: ftps
+          then:
+            return: true
