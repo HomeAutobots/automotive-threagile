@@ -1,0 +1,86 @@
+id: unprotected-key-storage
+title: Cryptographic Key / Credential Storage Without Hardware Protection
+function: architecture
+stride: information-disclosure
+cwe: 320
+description:
+  ECUs that hold long-term cryptographic material — ECU signing keys, TLS/V2X/ISO 15118
+  certificates and private keys, SecOC master keys, secure-boot keys — are high-value targets.
+  When that material is held without hardware-backed protection (an HSM / SHE / secure element
+  with key isolation and tamper resistance), an attacker who gains code execution or physical
+  access can dump the keys from flash/RAM. Extracted keys break every downstream trust
+  relationship they anchor — forging firmware, impersonating the vehicle to the backend or
+  charging network, spoofing authenticated bus traffic, or minting V2X messages. This maps to
+  Auto-ISAC ATM "ECU Credential Dumping" (ATM-T0039), "Unsecured Credentials" (ATM-T0040),
+  and "Compromise Cryptographic Security" (ATM-T0075), and to MITRE ATT&CK T1552
+  "Unsecured Credentials" / ATT&CK for ICS T0859 "Valid Accounts".
+impact:
+  If this risk is unmitigated, key extraction from one ECU can compromise the trust anchors
+  for OTA, backend authentication, SecOC, secure boot, charging, or V2X across the vehicle and
+  potentially the fleet, enabling forgery and impersonation that no downstream control detects.
+asvs:
+  V6 - Stored Cryptography Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+action:
+  Hardware-Backed Key Storage
+mitigation:
+  Store and use long-term keys inside a hardware security module / SHE / secure element so the
+  private key material never leaves the hardware boundary; perform signing and key agreement
+  on-chip, enforce key-usage isolation, and bind keys to a tamper-resistant root of trust.
+  Model the asset with the `hsm` tag once hardware-backed key storage is actually designed in.
+check:
+  Do all ECUs that hold cryptographic key/credential material (the `crypto-material` data
+  asset) protect it with hardware-backed storage (the `hsm` tag)?
+detection_logic:
+  In-scope technical assets that process or store the `crypto-material` data asset and do NOT
+  carry the `hsm` tag. Hardware-backed protection is treated as absent unless the asset
+  declares the `hsm` tag.
+risk_assessment:
+  The rating depends on what trust the keys anchor and the reachability of the asset.
+  Internet/RF-exposed ECUs holding signing or backend-authentication keys without an HSM are
+  high severity because a remote compromise yields fleet-relevant key material.
+false_positives:
+  Assets that hold key material in an HSM/SHE/secure element (tagged `hsm`) are false
+  positives. An asset that only transiently handles a public certificate (no private key) but
+  is modeled as processing `crypto-material` may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unprotected Key Storage</b> at <b>{tech_asset.title}</b>: cryptographic material is held without hardware-backed protection"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            # the asset holds long-term cryptographic key/credential material
+            - or:
+                - contains:
+                    item: crypto-material
+                    in: "{tech_asset.data_assets_processed}"
+                - contains:
+                    item: crypto-material
+                    in: "{tech_asset.data_assets_stored}"
+            # without hardware-backed key storage (no hsm tag)
+            - all:
+                in: "{tech_asset.tags}"
+                item: protection_tag
+                not-equal:
+                  first: "{protection_tag}"
+                  second: hsm
+          then:
+            return: true

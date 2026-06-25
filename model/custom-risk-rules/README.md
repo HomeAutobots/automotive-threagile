@@ -30,6 +30,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `unauthenticated-someip-service-link.yaml` | In-scope asset that originates a communication link tagged `some-ip` with no authentication — service-oriented Automotive Ethernet (SOME/IP / SOME/IP-SD) has no built-in auth, so an unauthenticated link permits spoofed service offers, RPC/event injection, service-graph discovery, and lateral movement across zonal/domain boundaries. Fills the Ethernet Discovery/Lateral-Movement gap left by the CAN-focused safety-bus rules. | elevation-of-privilege / CWE-306 |
 | `safety-function-without-redundancy.yaml` | In-scope asset tagged `safety-critical` that is not modeled `redundant: true` — a single point of failure with no fail-operational fallback, so one denial-of-service action (bus flood, ECU crash, sensor jam) removes the function. Fills the availability/DoS gap none of the other (integrity/auth) rules cover. | denial-of-service / CWE-400 |
 | `relay-vulnerable-passive-entry.yaml` | In-scope asset that originates a short-range (`uwb`/`bluetooth`) link to a `body`-tagged access controller that does NOT carry the `distance-bounding` tag — passive entry/start without secure ranging is relay-attack vulnerable. Keys on absence of distance bounding, NOT authentication, because crypto auth does not stop a relay (the legitimate exchange is simply forwarded). | spoofing / CWE-290 |
+| `unprotected-key-storage.yaml` | In-scope asset that processes/stores the `crypto-material` data asset (long-term keys/certs) but does NOT carry the `hsm` tag — key material held without hardware-backed storage is dumpable on code-exec or physical access, breaking every trust it anchors (firmware signing, backend auth, SecOC, secure boot, V2X). | information-disclosure / CWE-320 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -120,6 +121,11 @@ be confirmed to fire on the intended asset and skip the controls:
   `relay-vulnerable-passive-entry` even though the link is `credentials`-authenticated (crypto
   auth does not stop a relay). `keyfob-ranged` is the negative control: its `uwb` access link
   carries `distance-bounding`, so it must NOT fire.
+- `keystore-no-hsm` — in-scope ECU that processes the `crypto-material` data asset with no
+  `hsm` tag → fires `unprotected-key-storage` (keys not in hardware-backed storage). It uses a
+  real `encryption` value and the `secure-boot` tag, so it trips neither internet-exposed rule.
+  `keystore-hsm` is the negative control: same key holding but carries the `hsm` tag, so it must
+  NOT fire.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -136,7 +142,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `unauthenticated-someip-service-link` -> `someip-ecu` only (skips the mutual-TLS `someip-secure`);
 `safety-function-without-redundancy` -> `nonredundant-inverter` (and the other safety-critical
 fixture assets) but NOT `redundant-actuator` (modeled `redundant: true`);
-`relay-vulnerable-passive-entry` -> `keyfob-relay` only (skips the distance-bounded `keyfob-ranged`).
+`relay-vulnerable-passive-entry` -> `keyfob-relay` only (skips the distance-bounded `keyfob-ranged`);
+`unprotected-key-storage` -> `keystore-no-hsm` only (skips the `hsm`-tagged `keystore-hsm`).
 
 ## Caveat (still applies)
 

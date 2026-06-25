@@ -88,6 +88,12 @@ business_criticality: mission-critical
 #                     -> fires (relay-attack vulnerable). body-access-controller is the body target.
 #   - keyfob-ranged : fob whose `uwb` access link carries the `distance-bounding` tag
 #                     -> must NOT fire (negative control)
+#
+#   unprotected-key-storage (holds the crypto-material data asset without hardware key storage):
+#   - keystore-no-hsm : in-scope ECU processing `crypto-material` with no `hsm` tag
+#                       -> fires (keys dumpable / unsecured credentials)
+#   - keystore-hsm    : same but carrying the `hsm` tag (HSM/secure element)
+#                       -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -126,6 +132,18 @@ data_assets:
         availability: operational
         justification_cia_rating: |
             Diagnostic/flashing access enables arbitrary firmware modification.
+    crypto-material:
+        id: crypto-material
+        title: Cryptographic Material
+        description: ECU signing keys, TLS/V2X/ISO 15118 certs, SecOC/secure-boot keys.
+        usage: devops
+        origin: OEM
+        owner: OEM
+        confidentiality: strictly-confidential
+        integrity: mission-critical
+        availability: important
+        justification_cia_rating: |
+            Key compromise breaks every downstream trust relationship the keys anchor.
 technical_assets:
     brake-actuator-ecu:
         id: brake-actuator-ecu
@@ -986,3 +1004,56 @@ technical_assets:
               authorization: technical-user
               data_assets_sent:
                 - vehicle-control-commands
+    keystore-no-hsm:
+        id: keystore-no-hsm
+        title: Key-Holding ECU Without HSM
+        description: In-scope ECU that processes cryptographic key material with no hardware-backed storage (no hsm tag) -> keys are dumpable.
+        type: process
+        size: application
+        technologies:
+            - name: telematics
+              description: Telematics control unit
+              attributes:
+                telematics: true
+        machine: physical
+        internet: true
+        encryption: data-with-symmetric-shared-key
+        owner: OEM
+        confidentiality: strictly-confidential
+        integrity: mission-critical
+        availability: important
+        justification_cia_rating: |
+            Internet-facing ECU holding signing/backend keys with no hardware key isolation.
+        tags:
+            - telematics
+            - connectivity
+            - secure-boot
+        data_assets_processed:
+            - crypto-material
+    keystore-hsm:
+        id: keystore-hsm
+        title: Key-Holding ECU With HSM (negative control)
+        description: In-scope ECU that holds cryptographic key material in a hardware security module (hsm tag); must NOT trigger.
+        type: process
+        size: application
+        technologies:
+            - name: telematics
+              description: Telematics control unit
+              attributes:
+                telematics: true
+        machine: physical
+        internet: true
+        encryption: data-with-symmetric-shared-key
+        owner: OEM
+        confidentiality: strictly-confidential
+        integrity: mission-critical
+        availability: important
+        justification_cia_rating: |
+            Internet-facing ECU whose keys live in an HSM/secure element (negative control).
+        tags:
+            - telematics
+            - connectivity
+            - secure-boot
+            - hsm
+        data_assets_processed:
+            - crypto-material

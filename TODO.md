@@ -56,9 +56,12 @@ Movement over Automotive Ethernet**, **Affect-Vehicle-Function via DoS/availabil
       capability tag to the vocabulary. Maps ATM-T0007 (Relay Communications), ATM-T0065.
       Harness-validated + CI-enforced. (Fires on the real model's digital-key + Wi-Fi/BT
       passive-entry links to the body controller.)
-- [ ] `unprotected-key-storage` — internet-exposed asset that stores crypto/credential data
-      (e.g. the `crypto-material` data asset) without `secure-boot` / hardware key storage.
-      Maps ATM-T0039 (ECU Credential Dumping), ATM-T0040 (Unsecured Credentials), ATM-T0075.
+- [x] `unprotected-key-storage` — in-scope asset that processes/stores the `crypto-material`
+      data asset without the `hsm` tag (hardware-backed key storage). Added an `hsm` capability
+      tag; attached `crypto-material` to the real key-holders (TCU, V2X, central gateway,
+      charge controller) and marked V2X + central gateway `hsm`. The internet-exposed TCU and
+      charge controller fire (keys without HSM). Maps ATM-T0039 (ECU Credential Dumping),
+      ATM-T0040 (Unsecured Credentials), ATM-T0075. Harness-validated + CI-enforced.
 - [ ] `removable-media-ingress` — unauthenticated `physical` removable-media (USB/SD) link
       into infotainment/telematics (code/data ingress + exfil). Maps ATM-T0013/T0006.
       (Needs a `removable-media` link tag — would expand the vocabulary first.)
