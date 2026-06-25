@@ -34,6 +34,30 @@ Shipped: `unauthenticated-safety-bus-link`, `internet-exposed-ecu-unencrypted`,
 - [x] `internet-exposed-ecu-no-secure-boot` — internet-exposed ECU/compute lacking the
       `secure-boot` tag. Harness-validated + CI-enforced.
 
+### ATM-derived candidate rules (gap analysis vs Auto-ISAC ATM, 14 tactics / 77 techniques)
+The 10 shipped rules cover the integrity/auth columns (bus spoofing, diagnostics, gateway
+bridging, secure boot, OTA, charging). The columns still thin are **Discovery + Lateral
+Movement over Automotive Ethernet**, **Affect-Vehicle-Function via DoS/availability**,
+**Credential Access**, and **wireless relay / removable media**. Derived candidates:
+
+- [x] `unauthenticated-someip-service-link` — `some-ip`-tagged service link with
+      `authentication: none` (SOME/IP has no built-in auth; spoofable SD/RPC). Fills the
+      Ethernet Discovery/Lateral-Movement gap. Maps ATM-T0044/T0048/T0049 (discovery),
+      ATM-T0051/T0053 (lateral movement), ATM-T0038 (sniffing). Harness-validated + CI-enforced.
+- [ ] `safety-function-without-redundancy` — asset tagged `safety-critical` with
+      mission/critical availability but `redundant: false` (or no fallback) — exposes the
+      function to bus/endpoint DoS. Fills the **availability** gap none of the current rules
+      cover. Maps ATM-T0068 (CAN Bus DoS), ATM-T0072 (DoS on Vehicle Function), ATM-T0002.
+- [ ] `relay-vulnerable-passive-entry` — `uwb`/`bluetooth` access link reaching a `body`
+      lock/entry asset with no authentication / distance-bounding. Maps ATM-T0007 (Relay
+      Communications), ATM-T0065. (May need a `distance-bounding` capability tag.)
+- [ ] `unprotected-key-storage` — internet-exposed asset that stores crypto/credential data
+      (e.g. the `crypto-material` data asset) without `secure-boot` / hardware key storage.
+      Maps ATM-T0039 (ECU Credential Dumping), ATM-T0040 (Unsecured Credentials), ATM-T0075.
+- [ ] `removable-media-ingress` — unauthenticated `physical` removable-media (USB/SD) link
+      into infotainment/telematics (code/data ingress + exfil). Maps ATM-T0013/T0006.
+      (Needs a `removable-media` link tag — would expand the vocabulary first.)
+
 ## Model (`model/threagile.yaml`)
 - [x] Mark **SecOC-authenticated** links — modeled (as `authentication: credentials` +
       description) on flagship by-wire/propulsion CAN-FD buses (brake, steer, VCU↔inverter,
