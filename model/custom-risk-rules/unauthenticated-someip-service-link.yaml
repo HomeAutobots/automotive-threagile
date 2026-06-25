@@ -1,0 +1,102 @@
+id: unauthenticated-someip-service-link
+title: Unauthenticated SOME/IP Service-Oriented Link
+function: architecture
+stride: elevation-of-privilege
+cwe: 306
+description:
+  Service-oriented in-vehicle communication over Automotive Ethernet (SOME/IP and SOME/IP-SD)
+  carries remote procedure calls, event notifications, and service discovery between HPC
+  nodes, zone controllers, and domain ECUs. SOME/IP has no built-in authentication, so a
+  link that carries it without an authenticating/encrypting layer (TLS, IPsec, or MACsec)
+  lets any node on the segment offer spoofed services via SOME/IP-SD, subscribe to or inject
+  RPCs and events, enumerate the service graph, and pivot between domains. This maps to
+  MITRE ATT&CK for ICS T0830/T0842 and Auto-ISAC ATM "Network Service Scanning" (ATM-T0044),
+  "System Network Connections Discovery" (ATM-T0049), "Remote Services" (ATM-T0053),
+  "Bridge Vehicle Networks" (ATM-T0051), and "Network Sniffing" (ATM-T0038).
+impact:
+  If this risk is unmitigated, an attacker who reaches the Ethernet segment (from a
+  compromised connected ECU, a head unit, or a diagnostic foothold) can discover and invoke
+  in-vehicle services, spoof service offerings, and move laterally across zonal/domain
+  boundaries toward safety-relevant functions, all without presenting any credential.
+asvs:
+  V9 - Communication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action:
+  Authenticated Service-Oriented Communication
+mitigation:
+  Authenticate and integrity-protect SOME/IP traffic — terminate it over mutual TLS
+  (or DTLS) for service endpoints, and/or enable MACsec on the Automotive Ethernet links so
+  SOME/IP-SD offers and RPCs cannot be spoofed or injected by an unauthenticated node.
+  Combine with allow-listed service access control at the gateways/zone controllers. Do not
+  model a SOME/IP link as authentication "none" once such a control is designed in.
+check:
+  Do all SOME/IP (`some-ip`-tagged) service links require authentication (mutual TLS/DTLS or
+  an equivalent authenticated/MACsec layer), i.e. not authentication "none"?
+detection_logic:
+  In-scope technical assets that originate at least one communication link tagged `some-ip`
+  that carries no authentication. Authentication is treated as absent unless the link
+  declares a real method (credentials, session-id, token, client-certificate, two-factor,
+  externalized).
+risk_assessment:
+  The risk rating depends on which services and domains the segment reaches; a SOME/IP
+  segment that bridges toward safety-critical functions is high severity.
+false_positives:
+  SOME/IP links carried over mutual TLS/DTLS or an authenticated/MACsec layer (modeled with
+  an authentication value other than "none") are false positives. A purely intra-ECU
+  in-process service call mismodeled with the `some-ip` tag may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Unauthenticated SOME/IP Service Link</b> at <b>{tech_asset.title}</b>: a service-oriented Ethernet link carries no authentication"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # link carries no real authentication method (none == absent)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: credentials
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: session-id
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: token
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: two-factor
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: externalized
+                  # link is a SOME/IP service-oriented channel
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      equal:
+                        first: "{link_tag}"
+                        second: some-ip
+          then:
+            return: true

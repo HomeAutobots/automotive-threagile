@@ -36,6 +36,7 @@ reachable-debug-port|reachable-debug-port@debug-interface|secure-debug-port
 internet-exposed-ecu-no-secure-boot|internet-exposed-ecu-no-secure-boot@connected-ecu-no-secure-boot|secure-boot-ecu
 unencrypted-ota-channel|unencrypted-ota-channel@ota-backend-cleartext|ota-backend-tls
 iso15118-server-only-tls|iso15118-server-only-tls@evcc-server-only|evcc-mutual-tls
+unauthenticated-someip-service-link|unauthenticated-someip-service-link@someip-ecu|someip-secure
 "
 
 fail=0

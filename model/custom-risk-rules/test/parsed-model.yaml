@@ -69,6 +69,12 @@ business_criticality: mission-critical
 #                        `tls-server-only` with authentication none -> fires (no mutual TLS)
 #   - evcc-mutual-tls  : in-scope EVCC whose `iso15118` link is tagged `tls-mutual` and uses
 #                        authentication client-certificate -> must NOT fire (negative control)
+#
+#   unauthenticated-someip-service-link (SOME/IP service link with no authentication):
+#   - someip-ecu    : in-scope ECU originating a `some-ip`-tagged link with authentication
+#                     none -> fires (spoofable service discovery/RPC, lateral movement)
+#   - someip-secure : in-scope ECU whose `some-ip` link uses authentication client-certificate
+#                     (mutual TLS) -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -744,3 +750,77 @@ technical_assets:
               authorization: technical-user
               data_assets_sent:
                 - diagnostic-data
+    someip-ecu:
+        id: someip-ecu
+        title: Domain ECU on Unauthenticated SOME/IP
+        description: In-scope ECU originating a SOME/IP service link with no authentication -> spoofable service discovery / RPC, lateral movement.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Service-oriented Ethernet node; unauthenticated SOME/IP permits service spoofing and pivoting.
+        tags:
+            - ecu
+            - ethernet
+        data_assets_processed:
+            - telematics-telemetry
+        communication_links:
+            - id: someip-ecu>service
+              source_id: someip-ecu
+              target_id: chassis-zone-controller
+              title: SOME/IP Service Call (unauthenticated)
+              description: Service-oriented RPC/event link over Automotive Ethernet with no authentication.
+              protocol: unknown-protocol
+              tags:
+                - ethernet
+                - some-ip
+              authentication: none
+              authorization: none
+              data_assets_sent:
+                - telematics-telemetry
+    someip-secure:
+        id: someip-secure
+        title: Domain ECU on Mutually-Authenticated SOME/IP (negative control)
+        description: In-scope ECU whose SOME/IP link is carried over mutual TLS (authentication client-certificate); must NOT trigger.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Service-oriented Ethernet node whose SOME/IP traffic is authenticated (negative control).
+        tags:
+            - ecu
+            - ethernet
+        data_assets_processed:
+            - telematics-telemetry
+        communication_links:
+            - id: someip-secure>service
+              source_id: someip-secure
+              target_id: chassis-zone-controller
+              title: SOME/IP Service Call (mutual TLS)
+              description: Service-oriented RPC/event link over Automotive Ethernet secured with mutual TLS.
+              protocol: https
+              tags:
+                - ethernet
+                - some-ip
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - telematics-telemetry

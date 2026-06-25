@@ -62,6 +62,7 @@ Tag your model per the above and these rules apply automatically (in
 | `reachable-debug-port` | a `physical`-tagged (JTAG/UART) link has `authentication: none` |
 | `unencrypted-ota-channel` | an `ota`-tagged link uses a cleartext transport (not an encrypted `protocol` and not `vpn: true`) |
 | `iso15118-server-only-tls` | an `iso15118`-tagged link is not mutual TLS (no `tls-mutual` tag and auth not `client-certificate`) |
+| `unauthenticated-someip-service-link` | a `some-ip`-tagged service link has `authentication: none` (spoofable SOME/IP-SD / RPC) |
 
 ## Running it
 

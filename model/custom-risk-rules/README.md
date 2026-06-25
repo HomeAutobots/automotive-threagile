@@ -27,6 +27,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `internet-exposed-ecu-no-secure-boot.yaml` | In-scope `internet: true` asset tagged as on-board compute (`ecu`/`telematics`/`infotainment`/`connectivity`) that does NOT carry the `secure-boot` tag — an externally reachable compute node lacking a verified boot chain / immutable root of trust, so a remote compromise can be turned into a persistent boot-time implant. | tampering / CWE-1326 |
 | `unencrypted-ota-channel.yaml` | In-scope asset that originates a communication link tagged `ota` whose transport is not encrypted — `protocol` is not one of the encrypted protocols (`https`/`wss`/`binary-encrypted`/`text-encrypted`/`ssh`/`ssh-tunnel`/`sftp`/`scp`/`ftps`) and the link is not `vpn: true`. A cleartext OTA channel exposes the firmware payload and removes transport-layer MITM protection for software/firmware updates. Keys on the existing `ota` link tag, so no new model field is needed. | tampering / CWE-319 |
 | `iso15118-server-only-tls.yaml` | In-scope asset that originates a communication link tagged `iso15118` (EV↔EVSE Plug & Charge) that is NOT mutual TLS — it lacks the `tls-mutual` tag and its authentication is not `client-certificate`. Server-only TLS (ISO 15118-2; marked explicitly with `tls-server-only`) leaves the charging session without mutual authentication and open to adversary-in-the-middle. Per-link TLS directionality is modeled via the `tls-server-only`/`tls-mutual` link tags. | spoofing / CWE-295 |
+| `unauthenticated-someip-service-link.yaml` | In-scope asset that originates a communication link tagged `some-ip` with no authentication — service-oriented Automotive Ethernet (SOME/IP / SOME/IP-SD) has no built-in auth, so an unauthenticated link permits spoofed service offers, RPC/event injection, service-graph discovery, and lateral movement across zonal/domain boundaries. Fills the Ethernet Discovery/Lateral-Movement gap left by the CAN-focused safety-bus rules. | elevation-of-privilege / CWE-306 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -103,6 +104,11 @@ be confirmed to fire on the intended asset and skip the controls:
   the same `iso15118` link tagged `tls-mutual` with `authentication: client-certificate`
   must NOT fire. Both carry only the `charging`/`iso15118`/`tls-*` tags (no fieldbus/safety
   tag), so they trip no other rule.
+- `someip-ecu` — in-scope ECU originating a `some-ip`-tagged service link with authentication
+  none → fires `unauthenticated-someip-service-link` (spoofable SOME/IP-SD / RPC, lateral
+  movement). `someip-secure` is the negative control: the same `some-ip` link carried over
+  mutual TLS (`authentication: client-certificate`) must NOT fire. Both are tagged only
+  `ecu`/`ethernet` (no exposure/gateway/safety tag), so they trip no other rule.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -115,7 +121,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 -> `connected-ecu-no-secure-boot` only (skips `secure-boot-ecu`, `telematics-unit`,
 `rogue-telematics`, and the internet-`false` `infotainment-offline`);
 `unencrypted-ota-channel` -> `ota-backend-cleartext` only (skips the `https` `ota-backend-tls`);
-`iso15118-server-only-tls` -> `evcc-server-only` only (skips the mutual-TLS `evcc-mutual-tls`).
+`iso15118-server-only-tls` -> `evcc-server-only` only (skips the mutual-TLS `evcc-mutual-tls`);
+`unauthenticated-someip-service-link` -> `someip-ecu` only (skips the mutual-TLS `someip-secure`).
 
 ## Caveat (still applies)
 
