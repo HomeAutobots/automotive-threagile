@@ -31,6 +31,7 @@ Usage:
 """
 
 import argparse
+import collections
 import sys
 import yaml
 import networkx as nx
@@ -121,6 +122,70 @@ TARGET_TECH = (
     ["Modify Bus Message", "CAN Bus Denial of Service"],
     "ATM-TA0013",
 )
+
+# ---- Path-realism weighting (SELF-CONTAINED) --------------------------------
+# Auto-ISAC ATM "campaigns" (ATM-Pxxxx) are documented, real-world vehicle
+# attacks; each is linked (STIX 'uses' relationships) to the ATM techniques it
+# actually exercised. We embed that campaign<->technique evidence so a modeled
+# attack path can be WEIGHTED by whether real attacks have chained the same
+# techniques -- separating empirically-demonstrated paths from purely
+# theoretical ones. Extracted from the Auto-ISAC ATM STIX 2.1 export: the 11
+# campaigns that carry technique links, covering 37 of 77 techniques. EMBEDDED
+# like the per-hop tags above -- nothing is read from the (gitignored)
+# frameworks/ tree at runtime, so this still runs in CI.
+ATM_CAMPAIGN_NAMES = {
+    "ATM-P0006": "Experimental Security Assessment of BMW Cars",
+    "ATM-P0016": "Losing the Car Keys",
+    "ATM-P0020": "Hacking a Tesla Model S",
+    "ATM-P0038": "Drive It Like You Hacked It",
+    "ATM-P0082": "NFC Relay Attack on Tesla Model Y",
+    "ATM-P0083": "Comprehensive Experimental Analyses of Automotive Attack Surfaces",
+    "ATM-P0088": "There Will Be Glitches",
+    "ATM-P0141": "Exploiting Wi-Fi Stack on Tesla Model S",
+    "ATM-P0175": "Driving Down the Rabbit Hole",
+    "ATM-P0193": "Unlocking the Drive",
+    "ATM-P0198": "Jailbreaking an Electric Vehicle in 2023",
+}
+# ATM technique id -> the real campaigns that exercised it.
+ATM_TECHNIQUE_CAMPAIGNS = {
+    "ATM-T0002": ["ATM-P0141"],
+    "ATM-T0003": ["ATM-P0038"],
+    "ATM-T0006": ["ATM-P0175"],
+    "ATM-T0007": ["ATM-P0082"],
+    "ATM-T0008": ["ATM-P0006"],
+    "ATM-T0009": ["ATM-P0038"],
+    "ATM-T0010": ["ATM-P0083", "ATM-P0088"],
+    "ATM-T0011": ["ATM-P0020"],
+    "ATM-T0012": ["ATM-P0006", "ATM-P0083", "ATM-P0141", "ATM-P0175"],
+    "ATM-T0013": ["ATM-P0006", "ATM-P0083"],
+    "ATM-T0016": ["ATM-P0088"],
+    "ATM-T0018": ["ATM-P0006"],
+    "ATM-T0022": ["ATM-P0083"],
+    "ATM-T0025": ["ATM-P0141", "ATM-P0193"],
+    "ATM-T0026": ["ATM-P0006"],
+    "ATM-T0028": ["ATM-P0088", "ATM-P0198"],
+    "ATM-T0031": ["ATM-P0006"],
+    "ATM-T0033": ["ATM-P0088"],
+    "ATM-T0038": ["ATM-P0016", "ATM-P0038", "ATM-P0083", "ATM-P0175"],
+    "ATM-T0040": ["ATM-P0016"],
+    "ATM-T0042": ["ATM-P0006"],
+    "ATM-T0043": ["ATM-P0038", "ATM-P0175"],
+    "ATM-T0044": ["ATM-P0006"],
+    "ATM-T0047": ["ATM-P0006"],
+    "ATM-T0051": ["ATM-P0006"],
+    "ATM-T0053": ["ATM-P0141"],
+    "ATM-T0054": ["ATM-P0083"],
+    "ATM-T0055": ["ATM-P0088"],
+    "ATM-T0059": ["ATM-P0175"],
+    "ATM-T0062": ["ATM-P0006"],
+    "ATM-T0063": ["ATM-P0038"],
+    "ATM-T0064": ["ATM-P0083"],
+    "ATM-T0065": ["ATM-P0016", "ATM-P0083", "ATM-P0141"],
+    "ATM-T0067": ["ATM-P0006"],
+    "ATM-T0071": ["ATM-P0006", "ATM-P0083"],
+    "ATM-T0076": ["ATM-P0141"],
+    "ATM-T0077": ["ATM-P0083"],
+}
 
 
 def calculate_severity(likelihood: str, impact: str) -> str:
@@ -328,6 +393,51 @@ def _atm_tactic_chain(hops: list) -> str:
                        for h in hops)
 
 
+# ---- Path-realism weighting -------------------------------------------------
+def path_realism(hops: list) -> dict:
+    """Weight a path by real-world corroboration from ATM campaigns.
+
+    Collects the distinct ATM techniques tagged along the path and finds which
+    documented ATM campaigns (ATM-Pxxxx) exercised them. ``best_overlap`` is the
+    most of THIS path's techniques that any SINGLE real campaign chained
+    together -- >=2 means a documented attack followed a materially similar
+    chain (strong corroboration), 1 means individual techniques are attested but
+    no single campaign chained them, 0 means no campaign evidence (theoretical).
+    """
+    techs = []
+    for h in hops:
+        for t in h["atm_ids"]:
+            if t not in techs:
+                techs.append(t)
+    overlap = collections.Counter()
+    for t in techs:
+        for c in ATM_TECHNIQUE_CAMPAIGNS.get(t, ()):
+            overlap[c] += 1
+    ranked = sorted(overlap.items(), key=lambda kv: (-kv[1], kv[0]))
+    best = ranked[0][1] if ranked else 0
+    label = ("corroborated" if best >= 2
+             else "partially-corroborated" if best == 1
+             else "theoretical")
+    return {
+        "label": label,
+        "best_overlap": best,
+        "campaigns": ranked,  # [(campaign_id, overlap), ...] strongest first
+        "techniques_total": len(techs),
+        "techniques_corroborated": sum(
+            1 for t in techs if t in ATM_TECHNIQUE_CAMPAIGNS),
+    }
+
+
+def _realism_str(r: dict, top: int = 3) -> str:
+    """Compact realism annotation for the risk title (campaign IDs only)."""
+    if not r["campaigns"]:
+        return f"realism: {r['label']}"
+    ids = ", ".join(c for c, _ in r["campaigns"][:top])
+    return (f"realism: {r['label']} "
+            f"({r['techniques_corroborated']}/{r['techniques_total']} techniques "
+            f"attested; {ids})")
+
+
 # ---- Analysis ---------------------------------------------------------------
 def weakest_auth_on_path(g: nx.Graph, path: list) -> str:
     worst = "two-factor"
@@ -370,11 +480,13 @@ def analyze(g: nx.Graph, cutoff: int) -> dict:
                 continue
             shortest = nx.shortest_path(g, s, j)
             all_paths = list(nx.all_simple_paths(g, s, j, cutoff=cutoff))
+            hops_tagged = tag_path(g, shortest, j)
             paths.append({
                 "entry": s, "jewel": j,
                 "shortest": shortest,
                 "num_paths": len(all_paths),
-                "hops_tagged": tag_path(g, shortest, j),
+                "hops_tagged": hops_tagged,
+                "realism": path_realism(hops_tagged),
                 **score_path(g, shortest, j),
             })
             # Minimum node cut = fewest nodes whose removal severs s->j.
@@ -401,7 +513,8 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
         title = (f"<b>Attack path</b> {_path_str(g, p['shortest'])} "
                  f"[{p['hops']}h, {p['num_paths']} path(s), weakest auth {p['weakest_auth']}] "
                  f"| ATT&CK: {_attack_chain(hops)} "
-                 f"| ATM: {_atm_chain(hops)}")
+                 f"| ATM: {_atm_chain(hops)} "
+                 f"| {_realism_str(p['realism'])}")
         risks_identified[title] = {
             "severity": p["severity"],
             "exploitation_likelihood": p["exploitation_likelihood"],
@@ -440,7 +553,15 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                            "MITRE ATT&CK v19.1 (ICS); ATM IDs are Auto-ISAC ATM "
                            "technique IDs. Roles: entry=Initial Access, "
                            "gateway/zone=Lateral Movement, fieldbus edge=Modify Bus "
-                           "Message, terminal=Affect Vehicle Function.",
+                           "Message, terminal=Affect Vehicle Function. The trailing "
+                           "'realism:' tag weights the path by real-world evidence: it "
+                           "names the documented Auto-ISAC ATM campaigns (ATM-Pxxxx) "
+                           "that exercised the path's techniques. 'corroborated' = a "
+                           "single real attack chained 2+ of these techniques; "
+                           "'partially-corroborated' = individual techniques are "
+                           "attested but not chained in one campaign; 'theoretical' = "
+                           "no campaign evidence (informational, does not change "
+                           "severity).",
             "impact": "Remote attacker can inject control messages affecting "
                       "vehicle safety functions (steering, braking, transmission).",
             "asvs": "V1 - Architecture, Design and Threat Modeling",
@@ -533,6 +654,13 @@ def print_summary(g, result):
         print(f"      ATT&CK:  {_attack_chain(hops)}")
         print(f"      ATM:     {_atm_chain(hops)}")
         print(f"      ATM-TA:  {_atm_tactic_chain(hops)}")
+        r = p["realism"]
+        lead = (f" -- top: {r['campaigns'][0][0]} "
+                f"{ATM_CAMPAIGN_NAMES.get(r['campaigns'][0][0], '')}"
+                if r["campaigns"] else "")
+        print(f"      realism: {r['label']} "
+              f"({r['techniques_corroborated']}/{r['techniques_total']} "
+              f"techniques attested){lead}")
         print(f"      {path_mitigation_hint(g, p['shortest'], result['chokepoints'])}")
     print("\n  chokepoints (min node cut):")
     for node, jewels in sorted(result["chokepoints"].items(),

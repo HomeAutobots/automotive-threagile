@@ -170,6 +170,55 @@ def test_tag_path_roles():
     assert "ATM-TA0013" in hops[2]["atm_tactics"]
 
 
+# ---- path-realism weighting --------------------------------------------------
+def test_realism_corroborated_when_one_campaign_chains_two():
+    # ATM-P0006 exercised BOTH ATM-T0012 (entry) and ATM-T0051 (pivot), so a
+    # path tagged with both is 'corroborated' (best_overlap >= 2).
+    hops = [
+        {"atm_ids": ["ATM-T0012"]},
+        {"atm_ids": ["ATM-T0051", "ATM-T0052"]},
+        {"atm_ids": ["ATM-T0070", "ATM-T0068"]},
+    ]
+    r = apa.path_realism(hops)
+    assert r["label"] == "corroborated"
+    assert r["best_overlap"] >= 2
+    assert r["campaigns"][0][0] == "ATM-P0006"  # strongest first
+    # T0012 + T0051 are attested; T0052/T0070/T0068 are not.
+    assert r["techniques_corroborated"] == 2
+    assert r["techniques_total"] == 5
+
+
+def test_realism_partial_when_no_single_campaign_chains():
+    # Two techniques attested, but by DIFFERENT campaigns (no overlap >= 2).
+    # ATM-T0011 -> ATM-P0020 only; ATM-T0007 -> ATM-P0082 only.
+    hops = [{"atm_ids": ["ATM-T0011"]}, {"atm_ids": ["ATM-T0007"]}]
+    r = apa.path_realism(hops)
+    assert r["label"] == "partially-corroborated"
+    assert r["best_overlap"] == 1
+
+
+def test_realism_theoretical_when_no_evidence():
+    # ATM-T0070/T0068 carry no campaign evidence in the export.
+    r = apa.path_realism([{"atm_ids": ["ATM-T0070", "ATM-T0068"]}])
+    assert r["label"] == "theoretical"
+    assert r["best_overlap"] == 0
+    assert r["campaigns"] == []
+
+
+def test_realism_embedded_tables_consistent():
+    # Every campaign referenced by a technique must have a display name embedded
+    # (so the summary/title never references an unknown campaign id).
+    referenced = {c for cs in apa.ATM_TECHNIQUE_CAMPAIGNS.values() for c in cs}
+    assert referenced <= set(apa.ATM_CAMPAIGN_NAMES)
+
+
+def test_analyze_attaches_realism():
+    g = apa.build_reachability_graph(_three_node_model())
+    p = apa.analyze(g, cutoff=8)["paths"][0]
+    assert "realism" in p and p["realism"]["label"] in (
+        "corroborated", "partially-corroborated", "theoretical")
+
+
 # ---- calculate_severity boundary cases --------------------------------------
 def test_calculate_severity_boundaries():
     # very-likely (3) x very-high (4) = 12 -> critical
