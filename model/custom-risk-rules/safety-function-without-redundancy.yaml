@@ -1,0 +1,79 @@
+id: safety-function-without-redundancy
+title: Safety-Critical Function Without Redundancy
+function: architecture
+stride: denial-of-service
+cwe: 400
+description:
+  A safety-critical actuation or authority function (brake, steer, propulsion, restraints,
+  battery management, AD compute) that has no redundant/fail-operational path is a single
+  point of failure. An attacker who can deny that one node or its bus — by flooding the CAN
+  segment, crashing the ECU, exhausting its resources, or jamming a sensor feed — removes the
+  function entirely, with no fallback to keep the vehicle controllable. For SAE L3+ the
+  dynamic driving task must remain available through faults, so a non-redundant safety
+  function is a design weakness. This maps to Auto-ISAC ATM "CAN Bus Denial of Service"
+  (ATM-T0068), "Denial of Service on Vehicle Function" (ATM-T0072), and "Jamming or Denial
+  of Service" (ATM-T0002), and to MITRE ATT&CK for ICS T0814 "Denial of Service" / T0815
+  "Denial of View".
+impact:
+  If this risk is unmitigated, a single, possibly transient, denial-of-service action against
+  one ECU or bus segment can disable braking, steering, propulsion, restraint, or AD
+  decision-making, directly endangering occupants and other road users because no redundant
+  path takes over.
+asvs:
+  V1 - Architecture, Design and Threat Modeling Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+action:
+  Fail-Operational Redundancy for Safety Functions
+mitigation:
+  Provide a fail-operational design for safety-critical functions — redundant ECUs/actuation
+  paths, an independent fallback channel, and bus-level DoS resistance (e.g. CAN-FD with
+  intrusion detection, segmentation, rate limiting, and arbitration protection). Model the
+  asset with `redundant` true once a fail-operational fallback is actually designed in.
+check:
+  Do all safety-critical functions have a redundant / fail-operational path, i.e. the asset
+  is modeled with `redundant` true?
+detection_logic:
+  In-scope technical assets tagged `safety-critical` that are not modeled as redundant
+  (redundant true). Redundancy is treated as absent unless the asset declares `redundant` true.
+risk_assessment:
+  The rating depends on the controllability impact of losing the function and the ease of
+  denying its node/bus. Loss of braking, steering, or AD authority is high severity.
+false_positives:
+  Functions that genuinely have a fail-operational fallback (modeled with `redundant` true)
+  are false positives. A `safety-critical`-tagged asset whose loss is fully mitigated by an
+  independent mechanical or hydraulic fallback may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Safety-Critical Function Without Redundancy</b> at <b>{tech_asset.title}</b>: a safety function has no fail-operational fallback"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            # no redundant / fail-operational path modeled (redundant true is absent)
+            - false: "{tech_asset.redundant}"
+            # the function is safety-critical
+            - any:
+                in: "{tech_asset.tags}"
+                item: asset_tag
+                equal:
+                  first: "{asset_tag}"
+                  second: safety-critical
+          then:
+            return: true

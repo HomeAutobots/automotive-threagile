@@ -623,12 +623,13 @@ technical_assets:
     tags: [ecu, safety-critical, chassis, secure-boot]
     internet: false
     machine: physical
+    redundant: true
     encryption: none
     owner: OEM
     confidentiality: internal
     integrity: mission-critical
     availability: mission-critical
-    justification_cia_rating: Safety-critical actuator.
+    justification_cia_rating: Safety-critical actuator; ASIL-D fail-operational (redundant brake path).
     data_assets_processed: [safety-control-messages]
 
   Steering ECU:
@@ -641,12 +642,13 @@ technical_assets:
     tags: [ecu, safety-critical, chassis, secure-boot]
     internet: false
     machine: physical
+    redundant: true
     encryption: none
     owner: OEM
     confidentiality: internal
     integrity: mission-critical
     availability: mission-critical
-    justification_cia_rating: Safety-critical actuator; no mechanical fallback in SbW.
+    justification_cia_rating: Safety-critical actuator; ASIL-D fail-operational (dual-channel SbW, no mechanical fallback).
     data_assets_processed: [safety-control-messages]
 
   Vehicle Control Unit:
