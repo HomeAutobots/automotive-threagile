@@ -90,6 +90,10 @@ Generated from the current model by `./scripts/run-threagile.sh` and
 
 ## Modeling conventions
 
+The rules and analyzer are **tag-driven**, so they apply to any model that follows these
+conventions — see [CONVENTIONS.md](CONVENTIONS.md) for the full tag vocabulary, per-rule
+triggers, and run commands.
+
 - **Default insecure.** Every raw CAN / CAN FD / LIN / FlexRay / SENT link, and any Ethernet
   link without explicit MACsec / IPsec / TLS, is `authentication: none`, `encryption: none`.
   Secure links are marked only where SecOC, MACsec, or TLS is actually designed in.
