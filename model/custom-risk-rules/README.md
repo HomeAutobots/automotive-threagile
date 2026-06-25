@@ -25,6 +25,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `unauthenticated-gateway-bridge.yaml` | In-scope asset tagged `gateway` or `zone-controller` (a segmentation enforcement point) that originates a communication link with no authentication — the bridge forwards traffic across a boundary without authenticating it, weakening segmentation. Distinct from `cross-domain-link-no-filter` (which fires when NEITHER endpoint is a gateway/zone, i.e. a missing filter); this fires precisely when the bridging node IS the gateway/zone but its link is unauthenticated (a filter present but not authenticating). | elevation-of-privilege / CWE-306 |
 | `reachable-debug-port.yaml` | In-scope asset that originates a communication link tagged `physical` with no authentication — a hardware debug/test interface (JTAG/UART) left reachable without an authenticated secure-debug unlock. Distinct from `reachable-unauthenticated-diagnostics` (logical OBD-II/DoIP/UDS surface); this covers the silicon-level hardware debug surface. | elevation-of-privilege / CWE-1191 |
 | `internet-exposed-ecu-no-secure-boot.yaml` | In-scope `internet: true` asset tagged as on-board compute (`ecu`/`telematics`/`infotainment`/`connectivity`) that does NOT carry the `secure-boot` tag — an externally reachable compute node lacking a verified boot chain / immutable root of trust, so a remote compromise can be turned into a persistent boot-time implant. | tampering / CWE-1326 |
+| `unencrypted-ota-channel.yaml` | In-scope asset that originates a communication link tagged `ota` whose transport is not encrypted — `protocol` is not one of the encrypted protocols (`https`/`wss`/`binary-encrypted`/`text-encrypted`/`ssh`/`ssh-tunnel`/`sftp`/`scp`/`ftps`) and the link is not `vpn: true`. A cleartext OTA channel exposes the firmware payload and removes transport-layer MITM protection for software/firmware updates. Keys on the existing `ota` link tag, so no new model field is needed. | tampering / CWE-319 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -90,6 +91,11 @@ be confirmed to fire on the intended asset and skip the controls:
   not also trip `internet-exposed-ecu-unencrypted`. The pre-existing internet-facing assets
   `telematics-unit` and `rogue-telematics` are given the `secure-boot` tag so they do NOT
   fire this rule either; that tag does not affect their other documented matches.
+- `ota-backend-cleartext` — in-scope asset whose `ota`-tagged firmware-distribution link
+  uses a cleartext `protocol` (`unknown-protocol`) → fires `unencrypted-ota-channel`, even
+  though the link is `client-certificate` authenticated (authentication ≠ transport
+  confidentiality). `ota-backend-tls` is the negative control: the same `ota`-tagged link
+  over `https` must NOT fire.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -100,7 +106,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `chassis-zone-controller` only (skips `safe-chassis-gateway`); `reachable-debug-port` ->
 `debug-interface` only (skips `secure-debug-port`); `internet-exposed-ecu-no-secure-boot`
 -> `connected-ecu-no-secure-boot` only (skips `secure-boot-ecu`, `telematics-unit`,
-`rogue-telematics`, and the internet-`false` `infotainment-offline`).
+`rogue-telematics`, and the internet-`false` `infotainment-offline`);
+`unencrypted-ota-channel` -> `ota-backend-cleartext` only (skips the `https` `ota-backend-tls`).
 
 ## Caveat (still applies)
 
@@ -110,9 +117,14 @@ and harness-validated only. For findings that must ship in the report, emit them
 
 ## Deferred candidate rules
 
-`unencrypted-ota-channel` and `iso15118-server-only-tls` are deferred: both hinge on
-fields not represented in our parsed model (an OTA-update flag / per-link directionality
-of TLS), so they would require inventing fields outside the tag vocabulary.
+`iso15118-server-only-tls` is deferred: it hinges on per-link directionality of TLS
+(server-only vs mutual) that our parsed model does not represent, so it would require
+inventing a field outside the tag vocabulary.
+
+`unencrypted-ota-channel` is now authored: it keys on the existing `ota` link tag plus the
+link's `protocol`/`vpn` (cleartext transport), so "OTA over cleartext" is expressed within
+the tag vocabulary with no invented fields — the originally-assumed "OTA-update flag" was
+unnecessary.
 
 `internet-exposed-ecu-no-secure-boot` is now authored: the model carries a `secure-boot`
 asset tag (assets that implement verified/secure boot carry it), so "lacks secure boot" is
