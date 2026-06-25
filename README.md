@@ -86,7 +86,14 @@ Generated from the current model by `./scripts/run-threagile.sh` and
   TCU -> Central Gateway -> Chassis Zone Controller -> Brake ECU   [3 hops, weakest auth: none]
   ATT&CK: T0883 -> T0867/T0866 -> ... -> T1692.001/T0849/T0831/T0880
   ATM:    ATM-T0012 -> ATM-T0051/T0052 -> ... -> ATM-T0070/T0068
+  realism: corroborated (ATM-P0006 chained the entry + lateral-movement techniques)
   ```
+
+- **Path-realism weighting** — each path is weighted by whether documented real-world
+  Auto-ISAC ATM campaigns (`ATM-Pxxxx`, e.g. the BMW and Tesla assessments) exercised its
+  techniques: `corroborated` (one real campaign chained ≥2 of the path's techniques),
+  `partially-corroborated`, or `theoretical`. The campaign↔technique evidence is embedded in
+  the analyzer (no `frameworks/` dependency). It is informational — it does not change severity.
 
 ## Modeling conventions
 

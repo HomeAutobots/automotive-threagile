@@ -1,7 +1,7 @@
 individual_risk_categories:
   Multi-Hop Attack Path To Safety-Critical ECU:
     id: attack-path-to-safety-critical-ecu
-    description: 'An internet-exposed asset can reach a safety-critical ECU across one or more intermediate nodes/buses. Each risk title carries the per-hop technique chain: the ''ATT&CK:'' and ''ATM:'' arrows are aligned hop-by-hop with the path''s ''->'' node chain (one entry per node, ''/'' separates co-occurring techniques on a hop, ''-'' means that hop matched no mapping rule). ATT&CK IDs are MITRE ATT&CK v19.1 (ICS); ATM IDs are Auto-ISAC ATM technique IDs. Roles: entry=Initial Access, gateway/zone=Lateral Movement, fieldbus edge=Modify Bus Message, terminal=Affect Vehicle Function.'
+    description: 'An internet-exposed asset can reach a safety-critical ECU across one or more intermediate nodes/buses. Each risk title carries the per-hop technique chain: the ''ATT&CK:'' and ''ATM:'' arrows are aligned hop-by-hop with the path''s ''->'' node chain (one entry per node, ''/'' separates co-occurring techniques on a hop, ''-'' means that hop matched no mapping rule). ATT&CK IDs are MITRE ATT&CK v19.1 (ICS); ATM IDs are Auto-ISAC ATM technique IDs. Roles: entry=Initial Access, gateway/zone=Lateral Movement, fieldbus edge=Modify Bus Message, terminal=Affect Vehicle Function. The trailing ''realism:'' tag weights the path by real-world evidence: it names the documented Auto-ISAC ATM campaigns (ATM-Pxxxx) that exercised the path''s techniques. ''corroborated'' = a single real attack chained 2+ of these techniques; ''partially-corroborated'' = individual techniques are attested but not chained in one campaign; ''theoretical'' = no campaign evidence (informational, does not change severity).'
     impact: Remote attacker can inject control messages affecting vehicle safety functions (steering, braking, transmission).
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
@@ -16,7 +16,7 @@ individual_risk_categories:
     model_failure_possible_reason: false
     cwe: 923
     risks_identified:
-      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Brake ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Brake ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141)'
       : severity: critical
         exploitation_likelihood: very-likely
         exploitation_impact: very-high
@@ -24,7 +24,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Steering ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Steering ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141)'
       : severity: critical
         exploitation_likelihood: very-likely
         exploitation_impact: very-high
@@ -32,7 +32,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Transmission ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068'
+      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Transmission ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141)'
       : severity: critical
         exploitation_likelihood: very-likely
         exploitation_impact: very-high

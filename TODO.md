@@ -95,9 +95,13 @@ All five ATM-derived candidates are now implemented (15 custom rules total).
 - [x] Per-hop ATM + ATT&CK technique tagging.
 - [x] Optional **directed / reverse-edge** mode (`--directed`) — DiGraph with forward+reverse
       edges except true diodes (`readonly: true` or a `diode` tag).
-- [ ] **Path-realism weighting** — weight/annotate paths by whether a real Auto-ISAC
-      `ATM-Pxxxx` campaign exercised that technique against that asset class. *(Needs the
-      local-only campaign data embedded, like the technique tags — deferred.)*
+- [x] **Path-realism weighting** — each attack path is weighted by whether documented
+      Auto-ISAC `ATM-Pxxxx` campaigns exercised its techniques. The campaign↔technique
+      evidence (11 campaigns / 37 techniques from the ATM STIX export) is EMBEDDED in the
+      analyzer like the per-hop tags, so it runs in CI without `frameworks/`. Labels:
+      `corroborated` (one real campaign chained ≥2 of the path's techniques),
+      `partially-corroborated`, `theoretical`. Informational (does not change severity);
+      shown in the risk title + stdout. pytest-covered.
 - [x] Per-path mitigation hints (stdout) derived from the chokepoint (min-cut) results.
 - [x] `pytest` unit tests (`tests/test_analyzer.py`, 13 cases) + CI `tests` job.
 
