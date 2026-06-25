@@ -47,6 +47,7 @@ tags_available:
   - tls-server-only
   - tls-mutual
   - distance-bounding
+  - hsm
   - external
   - physical
   - secure-boot
@@ -191,7 +192,7 @@ technical_assets:
     integrity: important
     availability: important
     justification_cia_rating: Internet-exposed; primary remote initial-access asset.
-    data_assets_processed: [ecu-firmware]
+    data_assets_processed: [ecu-firmware, crypto-material]
     communication_links:
       Backbone To Central Gateway:
         target: central-gateway
@@ -238,7 +239,7 @@ technical_assets:
     usage: business
     size: application
     technology: iot-device
-    tags: [connectivity, v2x, external]
+    tags: [connectivity, v2x, external, hsm]
     internet: true
     machine: physical
     encryption: none
@@ -247,7 +248,7 @@ technical_assets:
     integrity: important
     availability: operational
     justification_cia_rating: RF-exposed; spoofable BSM/SPaT feeds into AD compute.
-    data_assets_processed: [v2x-messages]
+    data_assets_processed: [v2x-messages, crypto-material]
     communication_links:
       V2X To ADAS Compute:
         target: adas-compute
@@ -394,7 +395,7 @@ technical_assets:
     usage: business
     size: component
     technology: gateway
-    tags: [gateway, secure-boot]
+    tags: [gateway, secure-boot, hsm]
     internet: false
     machine: physical
     encryption: none
@@ -403,6 +404,7 @@ technical_assets:
     integrity: mission-critical
     availability: critical
     justification_cia_rating: Enforcement point between exposure and safety domains.
+    data_assets_processed: [crypto-material]
     communication_links:
       To Chassis Zone Controller:
         target: zone-chassis

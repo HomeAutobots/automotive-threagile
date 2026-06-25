@@ -16,7 +16,7 @@ Every tag used on an asset or communication link must be declared in the model's
 | In-vehicle buses | `can` `can-fd` `lin` `flexray` `ethernet` `some-ip` `doip` |
 | External / RF interfaces | `obd-ii` `v2x` `cellular` `bluetooth` `uwb` `gnss` `ota` `iso15118` |
 | Exposure / physical | `external` `physical` |
-| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` |
+| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` `hsm` |
 
 ## Modeling conventions
 
@@ -51,6 +51,10 @@ Every tag used on an asset or communication link must be declared in the model's
   `body` access domain, add the `distance-bounding` tag only when secure ranging (UWB
   time-of-flight) is enforced. Such a link without it is what `relay-vulnerable-passive-entry`
   flags — crypto authentication alone does not stop a relay, so the rule ignores `authentication`.
+- **Key storage.** Mark assets that hold long-term keys/credentials by listing the
+  `crypto-material` data asset in their `data_assets_processed`/`data_assets_stored`, and add
+  the `hsm` tag only when that material is held in hardware-backed storage (HSM/SHE/secure
+  element). A key-holder without `hsm` is what `unprotected-key-storage` flags.
 
 ## How each custom rule keys on the model
 
@@ -72,6 +76,7 @@ Tag your model per the above and these rules apply automatically (in
 | `unauthenticated-someip-service-link` | a `some-ip`-tagged service link has `authentication: none` (spoofable SOME/IP-SD / RPC) |
 | `safety-function-without-redundancy` | a `safety-critical`-tagged asset is not modeled `redundant: true` (single-point DoS exposure) |
 | `relay-vulnerable-passive-entry` | a `uwb`/`bluetooth` link to a `body`-tagged target lacks the `distance-bounding` tag (relay attack) |
+| `unprotected-key-storage` | an asset holding the `crypto-material` data asset lacks the `hsm` tag (keys not in hardware-backed storage) |
 
 ## Running it
 
