@@ -26,6 +26,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `reachable-debug-port.yaml` | In-scope asset that originates a communication link tagged `physical` with no authentication — a hardware debug/test interface (JTAG/UART) left reachable without an authenticated secure-debug unlock. Distinct from `reachable-unauthenticated-diagnostics` (logical OBD-II/DoIP/UDS surface); this covers the silicon-level hardware debug surface. | elevation-of-privilege / CWE-1191 |
 | `internet-exposed-ecu-no-secure-boot.yaml` | In-scope `internet: true` asset tagged as on-board compute (`ecu`/`telematics`/`infotainment`/`connectivity`) that does NOT carry the `secure-boot` tag — an externally reachable compute node lacking a verified boot chain / immutable root of trust, so a remote compromise can be turned into a persistent boot-time implant. | tampering / CWE-1326 |
 | `unencrypted-ota-channel.yaml` | In-scope asset that originates a communication link tagged `ota` whose transport is not encrypted — `protocol` is not one of the encrypted protocols (`https`/`wss`/`binary-encrypted`/`text-encrypted`/`ssh`/`ssh-tunnel`/`sftp`/`scp`/`ftps`) and the link is not `vpn: true`. A cleartext OTA channel exposes the firmware payload and removes transport-layer MITM protection for software/firmware updates. Keys on the existing `ota` link tag, so no new model field is needed. | tampering / CWE-319 |
+| `iso15118-server-only-tls.yaml` | In-scope asset that originates a communication link tagged `iso15118` (EV↔EVSE Plug & Charge) that is NOT mutual TLS — it lacks the `tls-mutual` tag and its authentication is not `client-certificate`. Server-only TLS (ISO 15118-2; marked explicitly with `tls-server-only`) leaves the charging session without mutual authentication and open to adversary-in-the-middle. Per-link TLS directionality is modeled via the `tls-server-only`/`tls-mutual` link tags. | spoofing / CWE-295 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -96,6 +97,12 @@ be confirmed to fire on the intended asset and skip the controls:
   though the link is `client-certificate` authenticated (authentication ≠ transport
   confidentiality). `ota-backend-tls` is the negative control: the same `ota`-tagged link
   over `https` must NOT fire.
+- `evcc-server-only` — in-scope EVCC originating an `iso15118`-tagged Plug & Charge link
+  tagged `tls-server-only` with authentication none → fires `iso15118-server-only-tls`
+  (server-only TLS, no mutual authentication). `evcc-mutual-tls` is the negative control:
+  the same `iso15118` link tagged `tls-mutual` with `authentication: client-certificate`
+  must NOT fire. Both carry only the `charging`/`iso15118`/`tls-*` tags (no fieldbus/safety
+  tag), so they trip no other rule.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -107,7 +114,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `debug-interface` only (skips `secure-debug-port`); `internet-exposed-ecu-no-secure-boot`
 -> `connected-ecu-no-secure-boot` only (skips `secure-boot-ecu`, `telematics-unit`,
 `rogue-telematics`, and the internet-`false` `infotainment-offline`);
-`unencrypted-ota-channel` -> `ota-backend-cleartext` only (skips the `https` `ota-backend-tls`).
+`unencrypted-ota-channel` -> `ota-backend-cleartext` only (skips the `https` `ota-backend-tls`);
+`iso15118-server-only-tls` -> `evcc-server-only` only (skips the mutual-TLS `evcc-mutual-tls`).
 
 ## Caveat (still applies)
 
@@ -117,14 +125,15 @@ and harness-validated only. For findings that must ship in the report, emit them
 
 ## Deferred candidate rules
 
-`iso15118-server-only-tls` is deferred: it hinges on per-link directionality of TLS
-(server-only vs mutual) that our parsed model does not represent, so it would require
-inventing a field outside the tag vocabulary.
-
 `unencrypted-ota-channel` is now authored: it keys on the existing `ota` link tag plus the
 link's `protocol`/`vpn` (cleartext transport), so "OTA over cleartext" is expressed within
 the tag vocabulary with no invented fields — the originally-assumed "OTA-update flag" was
 unnecessary.
+
+`iso15118-server-only-tls` is now authored: per-link TLS directionality is modeled within
+the tag vocabulary using the `tls-server-only`/`tls-mutual` link tags (plus the existing
+`client-certificate` authentication value for mutual TLS), so no field outside the
+vocabulary was needed. The `iso15118` link tag identifies the EV↔EVSE Plug & Charge channel.
 
 `internet-exposed-ecu-no-secure-boot` is now authored: the model carries a `secure-boot`
 asset tag (assets that implement verified/secure boot carry it), so "lacks secure boot" is

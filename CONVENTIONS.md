@@ -14,9 +14,9 @@ Every tag used on an asset or communication link must be declared in the model's
 |---|---|
 | Domain / role | `safety-critical` `ecu` `gateway` `zone-controller` `connectivity` `infotainment` `telematics` `adas` `powertrain` `chassis` `body` `charging` |
 | In-vehicle buses | `can` `can-fd` `lin` `flexray` `ethernet` `some-ip` `doip` |
-| External / RF interfaces | `obd-ii` `v2x` `cellular` `bluetooth` `uwb` `gnss` `ota` |
+| External / RF interfaces | `obd-ii` `v2x` `cellular` `bluetooth` `uwb` `gnss` `ota` `iso15118` |
 | Exposure / physical | `external` `physical` |
-| Capability | `secure-boot` |
+| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` |
 
 ## Modeling conventions
 
@@ -38,6 +38,12 @@ Every tag used on an asset or communication link must be declared in the model's
 - **OTA.** Tag any software/firmware update link `ota`. Model the transport honestly via
   `protocol` (`https`/`wss`/`*-encrypted` for TLS/DTLS, or `vpn: true` for a tunnel); a
   cleartext `protocol` on an `ota` link is what `unencrypted-ota-channel` flags.
+- **TLS directionality.** On a TLS-bearing link, model whether the handshake is mutual or
+  one-sided with a link tag: `tls-mutual` (both endpoints present/validate certificates) or
+  `tls-server-only` (server authenticated, client not — e.g. ISO 15118-2). Mutual TLS may
+  also be expressed as `authentication: client-certificate`. Tag the EV↔EVSE ISO 15118
+  Plug & Charge link `iso15118`; a server-only such link is what `iso15118-server-only-tls`
+  flags.
 
 ## How each custom rule keys on the model
 
@@ -55,6 +61,7 @@ Tag your model per the above and these rules apply automatically (in
 | `reachable-unauthenticated-diagnostics` | an `obd-ii`/`doip` link has `authentication: none` |
 | `reachable-debug-port` | a `physical`-tagged (JTAG/UART) link has `authentication: none` |
 | `unencrypted-ota-channel` | an `ota`-tagged link uses a cleartext transport (not an encrypted `protocol` and not `vpn: true`) |
+| `iso15118-server-only-tls` | an `iso15118`-tagged link is not mutual TLS (no `tls-mutual` tag and auth not `client-certificate`) |
 
 ## Running it
 

@@ -1,0 +1,101 @@
+id: iso15118-server-only-tls
+title: ISO 15118 Charging Session Without Mutual TLS
+function: architecture
+stride: spoofing
+cwe: 295
+description:
+  ISO 15118 high-level communication between the in-vehicle EVCC (Charge Port Controller)
+  and the off-board SECC (EVSE) secures the Plug & Charge session with TLS. ISO 15118-2
+  mandates only server-side TLS — the charging station presents a certificate, but the
+  vehicle is not authenticated at the TLS layer (Plug & Charge contract credentials are an
+  application-layer signature, not a TLS client certificate). With unilateral (server-only)
+  TLS the channel lacks mutual authentication, so a machine-in-the-middle on the CCS PLC
+  link — a malicious EVSE, a tampered charging cable, or a relay device — can impersonate a
+  peer, observe or manipulate contract/billing exchanges, and abuse the session. ISO
+  15118-20 addresses this by adding mutual TLS. This maps to MITRE ATT&CK T1557
+  "Adversary-in-the-Middle" and Auto-ISAC ATM "Intercept Vehicle Communications" /
+  "Compromise the Charging Session".
+impact:
+  If this risk is unmitigated, an attacker on the charging interface can stand between the
+  vehicle and the station, harvest or alter Plug & Charge contract and billing data,
+  conduct fraud or denial of charging, and use the foothold on the externally reachable
+  EVCC as a pivot toward in-vehicle networks (server-side-only TLS, lacking client/mutual
+  authentication).
+asvs:
+  V9 - Communication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+action:
+  Mutual TLS for ISO 15118 Charging
+mitigation:
+  Use mutually-authenticated TLS for ISO 15118 high-level communication (ISO 15118-20),
+  with both the EVCC and SECC presenting and validating certificates chained to a trusted
+  V2G PKI, plus certificate revocation/OCSP checking and pinning where feasible. Where
+  ISO 15118-2 server-only TLS cannot be avoided, compensate with strict contract-certificate
+  validation and physical/logical controls on the charging interface. Model the link with
+  the `tls-mutual` tag (plus a `client-certificate` authentication value) once mutual TLS
+  is in place.
+check:
+  Are all ISO 15118 (`iso15118`-tagged) charging links carried over mutual TLS
+  (`tls-mutual` and/or a `client-certificate` authentication value) rather than
+  server-only TLS?
+detection_logic:
+  In-scope technical assets that originate a communication link tagged `iso15118` that is
+  not mutually authenticated — i.e. it does not carry the `tls-mutual` tag and its
+  authentication is not `client-certificate`. The `tls-server-only` tag is the explicit
+  marker for the flagged (unilateral-TLS) case.
+risk_assessment:
+  The risk rating depends on the exposure of the charging interface and the sensitivity of
+  the contract/billing data and any pivot reachable from the EVCC. Externally reachable
+  EVCCs on server-only TLS are rated elevated-to-high.
+false_positives:
+  ISO 15118 links carried over mutual TLS (tagged `tls-mutual` or modeled with a
+  `client-certificate` authentication value) are false positives. A link tagged `iso15118` that
+  is not actually a TLS-bearing high-level communication channel may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>ISO 15118 Without Mutual TLS</b> at <b>{tech_asset.title}</b>: a Plug & Charge link uses server-only TLS"
+    severity: "calculate_severity(likely, medium)"
+    exploitation_likelihood: likely
+    exploitation_impact: medium
+    data_breach_probability: possible
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # the link is an ISO 15118 high-level communication channel
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      equal:
+                        first: "{link_tag}"
+                        second: iso15118
+                  # it is NOT explicitly tagged as mutual TLS
+                  - all:
+                      in: "{link.tags}"
+                      item: link_tag
+                      not-equal:
+                        first: "{link_tag}"
+                        second: tls-mutual
+                  # and there is no TLS client certificate (no mutual auth)
+                  - not-equal:
+                      first: "{link.authentication}"
+                      second: client-certificate
+          then:
+            return: true

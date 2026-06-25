@@ -63,6 +63,12 @@ business_criticality: mission-critical
 #                             confidentiality/MITM protection for the firmware payload)
 #   - ota-backend-tls       : originates an `ota`-tagged firmware link over `https`
 #                             -> must NOT fire (negative control: encrypted transport)
+#
+#   iso15118-server-only-tls (ISO 15118 charging link without mutual TLS):
+#   - evcc-server-only : in-scope EVCC originating an `iso15118`-tagged link tagged
+#                        `tls-server-only` with authentication none -> fires (no mutual TLS)
+#   - evcc-mutual-tls  : in-scope EVCC whose `iso15118` link is tagged `tls-mutual` and uses
+#                        authentication client-certificate -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -656,6 +662,84 @@ technical_assets:
               tags:
                 - ota
                 - ethernet
+              authentication: client-certificate
+              authorization: technical-user
+              data_assets_sent:
+                - diagnostic-data
+    evcc-server-only:
+        id: evcc-server-only
+        title: EVCC over ISO 15118-2 Server-Only TLS
+        description: In-scope Charge Port Controller (EVCC) whose ISO 15118 Plug & Charge link uses server-only TLS (no mutual auth) -> AitM-able charging session.
+        type: process
+        size: component
+        technologies:
+            - name: iot-device
+              description: EV charge controller (EVCC)
+              attributes:
+                iot-device: true
+        machine: physical
+        encryption: transparent
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Externally reachable charging interface; server-only TLS lacks mutual authentication.
+        tags:
+            - charging
+            - ecu
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: evcc-server-only>secc
+              source_id: evcc-server-only
+              target_id: chassis-zone-controller
+              title: ISO 15118 PnC (server-only TLS)
+              description: EVCC->SECC high-level communication over server-only TLS; EVCC not authenticated at the TLS layer.
+              protocol: https
+              tags:
+                - charging
+                - iso15118
+                - tls-server-only
+              authentication: none
+              authorization: technical-user
+              data_assets_sent:
+                - diagnostic-data
+    evcc-mutual-tls:
+        id: evcc-mutual-tls
+        title: EVCC over ISO 15118-20 Mutual TLS (negative control)
+        description: In-scope EVCC whose ISO 15118 link uses mutual TLS (tls-mutual + client-certificate); must NOT trigger.
+        type: process
+        size: component
+        technologies:
+            - name: iot-device
+              description: EV charge controller (EVCC)
+              attributes:
+                iot-device: true
+        machine: physical
+        encryption: transparent
+        owner: OEM
+        confidentiality: confidential
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Charging interface secured with mutually-authenticated TLS (negative control).
+        tags:
+            - charging
+            - ecu
+        data_assets_processed:
+            - diagnostic-data
+        communication_links:
+            - id: evcc-mutual-tls>secc
+              source_id: evcc-mutual-tls
+              target_id: chassis-zone-controller
+              title: ISO 15118 PnC (mutual TLS)
+              description: EVCC->SECC high-level communication over mutually-authenticated TLS.
+              protocol: https
+              tags:
+                - charging
+                - iso15118
+                - tls-mutual
               authentication: client-certificate
               authorization: technical-user
               data_assets_sent:
