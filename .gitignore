@@ -24,3 +24,4 @@ venv/
 /frameworks/
 /writeups/
 /scripts/validate-frameworks.py
+/TODO.md
