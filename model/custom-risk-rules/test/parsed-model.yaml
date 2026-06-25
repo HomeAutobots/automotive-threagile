@@ -81,6 +81,13 @@ business_criticality: mission-critical
 #                             -> fires (single-point DoS removes the function)
 #   - redundant-actuator    : in-scope `safety-critical` asset modeled `redundant: true`
 #                             -> must NOT fire (negative control)
+#
+#   relay-vulnerable-passive-entry (short-range access link without distance bounding):
+#   - keyfob-relay  : fob originating a `uwb`/`bluetooth` link to a `body`-tagged controller
+#                     with NO `distance-bounding` tag (even though crypto-authenticated)
+#                     -> fires (relay-attack vulnerable). body-access-controller is the body target.
+#   - keyfob-ranged : fob whose `uwb` access link carries the `distance-bounding` tag
+#                     -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -879,3 +886,103 @@ technical_assets:
             - safety-critical
         data_assets_processed:
             - vehicle-control-commands
+    body-access-controller:
+        id: body-access-controller
+        title: Body Domain / Access Controller
+        description: Body domain controller handling doors, locks, and passive entry/start (target of short-range access links).
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Body domain controller
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: internal
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Controls vehicle access; the endpoint of passive-entry / phone-as-key links.
+        tags:
+            - ecu
+            - body
+        data_assets_processed:
+            - vehicle-control-commands
+    keyfob-relay:
+        id: keyfob-relay
+        title: Digital Key Fob (no distance bounding)
+        description: BLE/UWB passive-entry fob whose access link is NOT distance-bounded -> relay-attack vulnerable despite crypto auth.
+        type: external-entity
+        size: component
+        technologies:
+            - name: device
+              description: Digital key fob
+              attributes:
+                device: true
+        machine: physical
+        owner: Driver
+        confidentiality: internal
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Authorizes entry/start over short-range radio; a relay forwards the exchange.
+        tags:
+            - body
+            - uwb
+            - bluetooth
+            - external
+        data_assets_processed:
+            - vehicle-control-commands
+        communication_links:
+            - id: keyfob-relay>access
+              source_id: keyfob-relay
+              target_id: body-access-controller
+              title: Passive Entry Access (BLE/UWB, no ranging)
+              description: Short-range access request that is cryptographically authenticated but not distance-bounded.
+              protocol: unknown-protocol
+              tags:
+                - uwb
+                - bluetooth
+              authentication: credentials
+              authorization: technical-user
+              data_assets_sent:
+                - vehicle-control-commands
+    keyfob-ranged:
+        id: keyfob-ranged
+        title: Digital Key Fob with UWB Distance Bounding (negative control)
+        description: UWB passive-entry fob whose access link enforces secure ranging (distance-bounding tag); must NOT trigger.
+        type: external-entity
+        size: component
+        technologies:
+            - name: device
+              description: Digital key fob
+              attributes:
+                device: true
+        machine: physical
+        owner: Driver
+        confidentiality: internal
+        integrity: critical
+        availability: important
+        justification_cia_rating: |
+            Passive entry gated on UWB time-of-flight distance bounding (negative control).
+        tags:
+            - body
+            - uwb
+            - external
+        data_assets_processed:
+            - vehicle-control-commands
+        communication_links:
+            - id: keyfob-ranged>access
+              source_id: keyfob-ranged
+              target_id: body-access-controller
+              title: Passive Entry Access (UWB, distance-bounded)
+              description: Short-range access request gated on secure UWB ranging.
+              protocol: unknown-protocol
+              tags:
+                - uwb
+                - distance-bounding
+              authentication: credentials
+              authorization: technical-user
+              data_assets_sent:
+                - vehicle-control-commands

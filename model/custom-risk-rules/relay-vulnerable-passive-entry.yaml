@@ -1,0 +1,100 @@
+id: relay-vulnerable-passive-entry
+title: Relay-Vulnerable Passive Entry / Keyless Access
+function: architecture
+stride: spoofing
+cwe: 290
+description:
+  Passive-entry / passive-start (PEPS) and phone-as-a-key systems let a fob or phone unlock
+  and start the vehicle over a short-range radio link (BLE and/or UWB) to the body domain.
+  Cryptographic authentication of the key does NOT defeat a relay attack — two attackers
+  simply forward (relay) the legitimate radio exchange between the real key and the car,
+  defeating the proximity assumption and unlocking/starting the vehicle while the key is far
+  away. The effective countermeasure is a secure distance measurement (UWB time-of-flight
+  distance bounding) that proves the key is actually nearby. A passive-entry access link that
+  is not distance-bounded is therefore relay-vulnerable regardless of its authentication.
+  This maps to Auto-ISAC ATM "Relay Communications" (ATM-T0007) and "Short Range Wireless
+  Communication" (ATM-T0065), and to MITRE ATT&CK Mobile T1438 / adversary-in-the-middle.
+impact:
+  If this risk is unmitigated, an attacker pair with cheap relay hardware can unlock, enter,
+  and drive away the vehicle, or relay the start authorization, without possessing or cloning
+  the key — a widely exploited, low-skill theft technique.
+asvs:
+  V2 - Authentication Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+action:
+  Distance-Bounded Passive Entry
+mitigation:
+  Gate passive entry/start on a secure ranging measurement — UWB time-of-flight distance
+  bounding (e.g. CCC Digital Key) with cryptographically protected ranging — so a relayed
+  exchange fails the proximity check. Add motion/intent checks and let users disable passive
+  entry. Authentication and encryption of the key exchange alone do not stop a relay. Model
+  the access link with the `distance-bounding` tag once secure ranging is actually designed in.
+check:
+  Do all short-range (BLE/UWB) passive-entry links to the body/access domain enforce secure
+  distance bounding (the `distance-bounding` tag)?
+detection_logic:
+  In-scope technical assets that originate a communication link tagged `uwb` or `bluetooth`
+  whose target is tagged `body` (a body/access domain controller) and which does NOT carry
+  the `distance-bounding` tag. Distance bounding is treated as absent unless the link declares
+  the `distance-bounding` tag; authentication state is deliberately ignored because it does
+  not mitigate a relay.
+risk_assessment:
+  The rating depends on what the access link can authorize (entry only vs entry-and-start)
+  and the exposure of the body domain it reaches; entry-and-start over a non-ranged link is
+  high severity.
+false_positives:
+  Passive-entry links that enforce secure distance bounding (tagged `distance-bounding`) are
+  false positives. A short-range link that cannot authorize entry/start (e.g. tire-pressure
+  telemetry) and merely shares the body target may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Relay-Vulnerable Passive Entry</b> at <b>{tech_asset.title}</b>: a short-range access link is not distance-bounded"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: improbable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            - any:
+                in: "{tech_asset.communication_links}"
+                item: link
+                and:
+                  # short-range radio link (BLE or UWB)
+                  - any:
+                      in: "{link.tags}"
+                      item: link_tag
+                      or:
+                        - equal:
+                            first: "{link_tag}"
+                            second: uwb
+                        - equal:
+                            first: "{link_tag}"
+                            second: bluetooth
+                  # reaching the body / access domain (passive entry/start surface)
+                  - contains:
+                      item: body
+                      in: "{$model.technical_assets.{link.target_id}.tags}"
+                  # not distance-bounded (secure ranging absent)
+                  - all:
+                      in: "{link.tags}"
+                      item: ranging_tag
+                      not-equal:
+                        first: "{ranging_tag}"
+                        second: distance-bounding
+          then:
+            return: true

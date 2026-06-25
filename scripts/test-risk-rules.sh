@@ -38,6 +38,7 @@ unencrypted-ota-channel|unencrypted-ota-channel@ota-backend-cleartext|ota-backen
 iso15118-server-only-tls|iso15118-server-only-tls@evcc-server-only|evcc-mutual-tls
 unauthenticated-someip-service-link|unauthenticated-someip-service-link@someip-ecu|someip-secure
 safety-function-without-redundancy|safety-function-without-redundancy@nonredundant-inverter|redundant-actuator
+relay-vulnerable-passive-entry|relay-vulnerable-passive-entry@keyfob-relay|keyfob-ranged
 "
 
 fail=0

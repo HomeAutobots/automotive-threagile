@@ -16,7 +16,7 @@ Every tag used on an asset or communication link must be declared in the model's
 | In-vehicle buses | `can` `can-fd` `lin` `flexray` `ethernet` `some-ip` `doip` |
 | External / RF interfaces | `obd-ii` `v2x` `cellular` `bluetooth` `uwb` `gnss` `ota` `iso15118` |
 | Exposure / physical | `external` `physical` |
-| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` |
+| Capability / transport | `secure-boot` `tls-server-only` `tls-mutual` `distance-bounding` |
 
 ## Modeling conventions
 
@@ -47,6 +47,10 @@ Every tag used on an asset or communication link must be declared in the model's
 - **Redundancy.** Set `redundant: true` on a `safety-critical` asset only when it genuinely
   has a fail-operational fallback (redundant ECU/actuation path). A safety-critical asset
   without it is what `safety-function-without-redundancy` flags (single-point DoS exposure).
+- **Distance bounding.** On a short-range (`uwb`/`bluetooth`) passive-entry/start link to the
+  `body` access domain, add the `distance-bounding` tag only when secure ranging (UWB
+  time-of-flight) is enforced. Such a link without it is what `relay-vulnerable-passive-entry`
+  flags — crypto authentication alone does not stop a relay, so the rule ignores `authentication`.
 
 ## How each custom rule keys on the model
 
@@ -67,6 +71,7 @@ Tag your model per the above and these rules apply automatically (in
 | `iso15118-server-only-tls` | an `iso15118`-tagged link is not mutual TLS (no `tls-mutual` tag and auth not `client-certificate`) |
 | `unauthenticated-someip-service-link` | a `some-ip`-tagged service link has `authentication: none` (spoofable SOME/IP-SD / RPC) |
 | `safety-function-without-redundancy` | a `safety-critical`-tagged asset is not modeled `redundant: true` (single-point DoS exposure) |
+| `relay-vulnerable-passive-entry` | a `uwb`/`bluetooth` link to a `body`-tagged target lacks the `distance-bounding` tag (relay attack) |
 
 ## Running it
 

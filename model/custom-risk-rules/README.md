@@ -29,6 +29,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `iso15118-server-only-tls.yaml` | In-scope asset that originates a communication link tagged `iso15118` (EV↔EVSE Plug & Charge) that is NOT mutual TLS — it lacks the `tls-mutual` tag and its authentication is not `client-certificate`. Server-only TLS (ISO 15118-2; marked explicitly with `tls-server-only`) leaves the charging session without mutual authentication and open to adversary-in-the-middle. Per-link TLS directionality is modeled via the `tls-server-only`/`tls-mutual` link tags. | spoofing / CWE-295 |
 | `unauthenticated-someip-service-link.yaml` | In-scope asset that originates a communication link tagged `some-ip` with no authentication — service-oriented Automotive Ethernet (SOME/IP / SOME/IP-SD) has no built-in auth, so an unauthenticated link permits spoofed service offers, RPC/event injection, service-graph discovery, and lateral movement across zonal/domain boundaries. Fills the Ethernet Discovery/Lateral-Movement gap left by the CAN-focused safety-bus rules. | elevation-of-privilege / CWE-306 |
 | `safety-function-without-redundancy.yaml` | In-scope asset tagged `safety-critical` that is not modeled `redundant: true` — a single point of failure with no fail-operational fallback, so one denial-of-service action (bus flood, ECU crash, sensor jam) removes the function. Fills the availability/DoS gap none of the other (integrity/auth) rules cover. | denial-of-service / CWE-400 |
+| `relay-vulnerable-passive-entry.yaml` | In-scope asset that originates a short-range (`uwb`/`bluetooth`) link to a `body`-tagged access controller that does NOT carry the `distance-bounding` tag — passive entry/start without secure ranging is relay-attack vulnerable. Keys on absence of distance bounding, NOT authentication, because crypto auth does not stop a relay (the legitimate exchange is simply forwarded). | spoofing / CWE-290 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -114,6 +115,11 @@ be confirmed to fire on the intended asset and skip the controls:
   fires `safety-function-without-redundancy` (single-point DoS exposure). `redundant-actuator`
   is the negative control: same safety-critical tag but modeled `redundant: true`, so it must
   NOT fire. Neither originates a link, so they trip no bus/diagnostic rule.
+- `keyfob-relay` — fob originating a `uwb`/`bluetooth` link to the `body`-tagged
+  `body-access-controller` with no `distance-bounding` tag → fires
+  `relay-vulnerable-passive-entry` even though the link is `credentials`-authenticated (crypto
+  auth does not stop a relay). `keyfob-ranged` is the negative control: its `uwb` access link
+  carries `distance-bounding`, so it must NOT fire.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -129,7 +135,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 `iso15118-server-only-tls` -> `evcc-server-only` only (skips the mutual-TLS `evcc-mutual-tls`);
 `unauthenticated-someip-service-link` -> `someip-ecu` only (skips the mutual-TLS `someip-secure`);
 `safety-function-without-redundancy` -> `nonredundant-inverter` (and the other safety-critical
-fixture assets) but NOT `redundant-actuator` (modeled `redundant: true`).
+fixture assets) but NOT `redundant-actuator` (modeled `redundant: true`);
+`relay-vulnerable-passive-entry` -> `keyfob-relay` only (skips the distance-bounded `keyfob-ranged`).
 
 ## Caveat (still applies)
 

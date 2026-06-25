@@ -46,6 +46,7 @@ tags_available:
   - iso15118
   - tls-server-only
   - tls-mutual
+  - distance-bounding
   - external
   - physical
   - secure-boot
