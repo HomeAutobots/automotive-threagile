@@ -1,0 +1,89 @@
+id: unverified-firmware-update
+title: Firmware Update Without Signature Verification (Uptane)
+function: architecture
+stride: tampering
+cwe: 494
+description:
+  An ECU that receives and installs firmware/software updates must verify the integrity and
+  authenticity of the image before applying it — independently of the transport. The
+  automotive reference design for this is Uptane — a Director and an Image repository sign
+  update metadata with role-separated, threshold keys, the Primary ECU performs full
+  verification, and every Secondary performs at least partial verification (Targets metadata
+  plus image hash/signature) before flashing. When a firmware-handling ECU does not perform
+  this on-device verification, a compromised OTA backend, a malicious mirror, a tampered
+  Primary, or a man-in-the-middle that gets past the transport can install arbitrary firmware,
+  and rollback protection is absent. Transport encryption/authentication (TLS) does NOT cover
+  this — it protects the link, not the image. This maps to Auto-ISAC ATM "Supply Chain
+  Compromise" (ATM-T0017), "Bypass Code Integrity Protections" (ATM-T0031), and "Disable
+  Software Update" (ATM-T0021), and to MITRE ATT&CK for ICS T0857 "System Firmware" /
+  Enterprise T1601 "Modify System Image".
+impact:
+  If this risk is unmitigated, an attacker who reaches any point in the update pipeline can
+  push malicious or downgraded firmware to the ECU, gaining durable, possibly safety-impacting
+  code execution that survives reboot and OTA, potentially across the fleet.
+asvs:
+  V10 - Malicious Code Verification Requirements
+cheat_sheet:
+  https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+action:
+  Verified (Uptane) Firmware Updates
+mitigation:
+  Verify every update on-device against signed metadata before install — adopt Uptane
+  (Director + Image repos, role-separated threshold signatures, full verification on Primaries
+  and at least partial verification on Secondaries) with anti-rollback (version/timestamp
+  checks) and keys held in hardware. Do not rely on transport security alone. Model the asset
+  with the `firmware-signing` tag once on-device image verification is actually designed in.
+check:
+  Do all ECUs that receive/install firmware (process the `ecu-firmware` data asset) verify
+  signed images on-device (the `firmware-signing` tag)?
+detection_logic:
+  In-scope technical assets that process or store the `ecu-firmware` data asset and do NOT
+  carry the `firmware-signing` tag. On-device verification is treated as absent unless the
+  asset declares the `firmware-signing` tag.
+risk_assessment:
+  The rating depends on the privilege of the ECU and what it controls; a safety-relevant ECU
+  or a zone controller that flashes downstream ECUs without verification is high severity.
+false_positives:
+  ECUs that perform on-device signed-image verification (tagged `firmware-signing`) are false
+  positives. An asset that merely relays firmware bytes without ever installing or executing
+  them may be reviewed individually.
+
+risk:
+  id:
+    parameter: tech_asset
+    id: "{$risk.id}@{tech_asset.id}"
+
+  data:
+    parameter: tech_asset
+    title: "<b>Firmware Update Without Signature Verification</b> at <b>{tech_asset.title}</b>: an ECU installs firmware without on-device image verification"
+    severity: "calculate_severity(likely, high)"
+    exploitation_likelihood: likely
+    exploitation_impact: high
+    data_breach_probability: probable
+    data_breach_technical_assets:
+      - "{tech_asset.id}"
+    most_relevant_technical_asset: "{tech_asset.id}"
+
+  match:
+    parameter: tech_asset
+    do:
+      - if:
+          and:
+            - false: "{tech_asset.out_of_scope}"
+            # the asset receives/installs firmware
+            - or:
+                - contains:
+                    item: ecu-firmware
+                    in: "{tech_asset.data_assets_processed}"
+                - contains:
+                    item: ecu-firmware
+                    in: "{tech_asset.data_assets_stored}"
+            # without on-device signed-image verification (no firmware-signing tag)
+            - all:
+                in: "{tech_asset.tags}"
+                item: verification_tag
+                not-equal:
+                  first: "{verification_tag}"
+                  second: firmware-signing
+          then:
+            return: true

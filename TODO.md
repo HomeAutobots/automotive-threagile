@@ -84,8 +84,11 @@ All five ATM-derived candidates are now implemented (15 custom rules total).
       `tls-mutual` link tags (vocabulary expanded); the EVCC->EVSE ISO 15118 link is corrected
       to originate from the in-scope charge controller and modeled as ISO 15118-2 server-only
       TLS (`tls-server-only`, authentication none).
-- [ ] Model **firmware-signing / Uptane** as a distinct property (partially implied today by
-      the OTA client-cert link + crypto-material data asset) if a dedicated rule is wanted.
+- [x] Model **firmware-signing / Uptane** as a distinct property — added a `firmware-signing`
+      capability tag (on-device signed-image verification) and the `unverified-firmware-update`
+      rule. Marked the OTA Primary/distributor (TCU, central compute) `firmware-signing` and
+      attached `ecu-firmware` to the receiving secondary (`zone-chassis`), which fires (the
+      classic Uptane secondary-verification gap). Maps ATM-T0017/T0031/T0021; ATT&CK ICS T0857.
 - [x] Drop the `(SEED)` suffix from the title (now `Composite BEV Zonal L3+`).
 
 ## Analyzer (`scripts/attack_path_analyzer.py`)

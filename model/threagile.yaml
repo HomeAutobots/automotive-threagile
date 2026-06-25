@@ -49,6 +49,7 @@ tags_available:
   - distance-bounding
   - hsm
   - removable-media
+  - firmware-signing
   - external
   - physical
   - secure-boot
@@ -184,7 +185,7 @@ technical_assets:
     usage: business
     size: application
     technology: gateway
-    tags: [connectivity, telematics, cellular, ota, external, secure-boot]
+    tags: [connectivity, telematics, cellular, ota, external, secure-boot, firmware-signing]
     internet: true
     machine: physical
     encryption: none
@@ -345,7 +346,7 @@ technical_assets:
     usage: business
     size: system
     technology: application-server
-    tags: [gateway, connectivity, secure-boot]
+    tags: [gateway, connectivity, secure-boot, firmware-signing]
     internet: false
     machine: physical
     encryption: none
@@ -470,6 +471,7 @@ technical_assets:
     integrity: mission-critical
     availability: mission-critical
     justification_cia_rating: Routes safety-critical chassis traffic.
+    data_assets_processed: [ecu-firmware]
     communication_links:
       To Brake ECU:
         target: brake-ecu

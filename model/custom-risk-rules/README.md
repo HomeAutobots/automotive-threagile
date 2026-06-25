@@ -32,6 +32,7 @@ Per-asset / per-link automotive risk rules in Threagile's YAML script language (
 | `relay-vulnerable-passive-entry.yaml` | In-scope asset that originates a short-range (`uwb`/`bluetooth`) link to a `body`-tagged access controller that does NOT carry the `distance-bounding` tag — passive entry/start without secure ranging is relay-attack vulnerable. Keys on absence of distance bounding, NOT authentication, because crypto auth does not stop a relay (the legitimate exchange is simply forwarded). | spoofing / CWE-290 |
 | `unprotected-key-storage.yaml` | In-scope asset that processes/stores the `crypto-material` data asset (long-term keys/certs) but does NOT carry the `hsm` tag — key material held without hardware-backed storage is dumpable on code-exec or physical access, breaking every trust it anchors (firmware signing, backend auth, SecOC, secure boot, V2X). | information-disclosure / CWE-320 |
 | `removable-media-ingress.yaml` | In-scope asset that originates a `removable-media`-tagged (USB/SD) link with no authentication — a media interface that parses untrusted content without signature/sandbox validation is both an initial-access vector (malformed-file parser exploit) and a data-exfiltration channel. | tampering / CWE-345 |
+| `unverified-firmware-update.yaml` | In-scope asset that processes/stores the `ecu-firmware` data asset but does NOT carry the `firmware-signing` tag — an ECU that installs firmware without on-device signed-image verification (Uptane full/partial verification). Transport security (TLS) protects the link, not the image, so a compromised backend/mirror/Primary or a rollback can install malicious firmware. | tampering / CWE-494 |
 
 Each rule references the relevant Auto-ISAC ATM / MITRE ATT&CK technique IDs in its
 `description`.
@@ -131,6 +132,10 @@ be confirmed to fire on the intended asset and skip the controls:
   authentication none → fires `removable-media-ingress` (untrusted-media ingress/exfil).
   `media-host-validated` is the negative control: its removable-media link uses authentication
   `client-certificate` (signed/validated content), so it must NOT fire.
+- `fw-receiver-unverified` — in-scope ECU that processes the `ecu-firmware` data asset with no
+  `firmware-signing` tag → fires `unverified-firmware-update` (installs firmware without
+  on-device verification). `fw-receiver-signed` is the negative control: same firmware handling
+  but carries the `firmware-signing` tag, so it must NOT fire.
 
 Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller`,
 `rogue-telematics`; `internet-exposed-ecu-unencrypted` -> `telematics-unit` only;
@@ -149,7 +154,8 @@ Validated results: `unauthenticated-safety-bus-link` -> `chassis-zone-controller
 fixture assets) but NOT `redundant-actuator` (modeled `redundant: true`);
 `relay-vulnerable-passive-entry` -> `keyfob-relay` only (skips the distance-bounded `keyfob-ranged`);
 `unprotected-key-storage` -> `keystore-no-hsm` only (skips the `hsm`-tagged `keystore-hsm`);
-`removable-media-ingress` -> `media-host` only (skips the validated `media-host-validated`).
+`removable-media-ingress` -> `media-host` only (skips the validated `media-host-validated`);
+`unverified-firmware-update` -> `fw-receiver-unverified` only (skips the `firmware-signing` `fw-receiver-signed`).
 
 ## Caveat (still applies)
 

@@ -100,6 +100,12 @@ business_criticality: mission-critical
 #                            authentication none -> fires (untrusted media ingress/exfil)
 #   - media-host-validated : same but the link uses authentication client-certificate
 #                            (signed/validated content) -> must NOT fire (negative control)
+#
+#   unverified-firmware-update (installs the ecu-firmware data asset without on-device signing):
+#   - fw-receiver-unverified : in-scope ECU processing `ecu-firmware` with no `firmware-signing`
+#                              tag -> fires (no Uptane-style image verification)
+#   - fw-receiver-signed     : same but carrying the `firmware-signing` tag
+#                              -> must NOT fire (negative control)
 # ---------------------------------------------------------------------------
 data_assets:
     vehicle-control-commands:
@@ -150,6 +156,18 @@ data_assets:
         availability: important
         justification_cia_rating: |
             Key compromise breaks every downstream trust relationship the keys anchor.
+    ecu-firmware:
+        id: ecu-firmware
+        title: ECU Firmware
+        description: OTA payloads and ECU firmware images.
+        usage: devops
+        origin: OEM
+        owner: OEM
+        confidentiality: confidential
+        integrity: mission-critical
+        availability: important
+        justification_cia_rating: |
+            Firmware integrity is anti-tamper; unverified images allow malicious code install.
 technical_assets:
     brake-actuator-ecu:
         id: brake-actuator-ecu
@@ -1137,3 +1155,50 @@ technical_assets:
               authorization: technical-user
               data_assets_sent:
                 - telematics-telemetry
+    fw-receiver-unverified:
+        id: fw-receiver-unverified
+        title: ECU Installing Firmware Without Verification
+        description: In-scope ECU that processes/installs the ecu-firmware data asset with no on-device signature verification (no firmware-signing tag).
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: internal
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Installs OTA firmware without verifying signed images; malicious update yields code exec.
+        tags:
+            - ecu
+            - zone-controller
+        data_assets_processed:
+            - ecu-firmware
+    fw-receiver-signed:
+        id: fw-receiver-signed
+        title: ECU With Uptane Firmware Verification (negative control)
+        description: In-scope ECU that verifies signed images on-device before install (firmware-signing tag); must NOT trigger.
+        type: process
+        size: component
+        technologies:
+            - name: ecu
+              description: Electronic Control Unit
+              attributes:
+                ecu: true
+        machine: physical
+        owner: OEM
+        confidentiality: internal
+        integrity: mission-critical
+        availability: mission-critical
+        justification_cia_rating: |
+            Performs Uptane-style on-device verification before flashing (negative control).
+        tags:
+            - ecu
+            - zone-controller
+            - firmware-signing
+        data_assets_processed:
+            - ecu-firmware
