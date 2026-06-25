@@ -109,11 +109,6 @@ triggers, and run commands.
 - **Crown jewels.** Safety-critical actuation (brake, steer, BMS, inverter, VCU, restraints)
   is tagged `safety-critical` — these are the analyzer's targets.
 
-## Roadmap
-
-Open work (rules, model gaps, analyzer enhancements, going public) is tracked in
-[TODO.md](TODO.md).
-
 ## Contributing
 
 Changes go through a branch + PR (no direct commits to `main`); CI must pass before merge.
