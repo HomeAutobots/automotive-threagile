@@ -468,3 +468,28 @@ def test_emit_risks_title_names_fired_controls():
         ["Multi-Hop Attack Path To Safety-Critical ECU"]["risks_identified"]
     )
     assert any("binary-hardening" in t for t in titles)
+
+
+# ---- honesty guard: active controls fire, inert controls never do -----------
+def test_active_vs_inert_controls_match_emitted_techniques():
+    # Union of every technique ID the analyzer can emit on a hop.
+    emitted = set()
+    for rule in apa.ENTRY_RULES:
+        _, ax_ids, _, atm_ids, _, _ = rule
+        emitted |= set(ax_ids) | set(atm_ids)
+    for tup in (apa.PIVOT_TECH, apa.BUS_TECH, apa.TARGET_TECH, apa.KEYTHEFT_TECH):
+        ax_ids, _, atm_ids, _, _ = tup
+        emitted |= set(ax_ids) | set(atm_ids)
+
+    active = {"binary-hardening", "memory-protection", "attack-surface-reduction",
+              "ids", "sensor-plausibility", "hsm"}
+    inert = {"secure-boot", "firmware-signing", "anti-rollback"}
+
+    # Every active control must defeat at least one emitted technique.
+    for tag in active:
+        assert apa.CONTROL_CATALOG[tag]["defeats"] & emitted, \
+            f"active control {tag} matches no emitted technique"
+    # Inert controls must defeat NO emitted technique (no silent firing).
+    for tag in inert:
+        assert not (apa.CONTROL_CATALOG[tag]["defeats"] & emitted), \
+            f"inert control {tag} unexpectedly matches an emitted technique"
