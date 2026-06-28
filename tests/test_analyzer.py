@@ -21,7 +21,7 @@ _spec.loader.exec_module(apa)
 
 # ---- Tiny model builders -----------------------------------------------------
 def _asset(aid, *, tags=None, internet=False, out_of_scope=False,
-           integrity="operational", links=None):
+           integrity="operational", links=None, data_processed=None):
     return {
         "id": aid,
         "tags": tags or [],
@@ -29,6 +29,7 @@ def _asset(aid, *, tags=None, internet=False, out_of_scope=False,
         "out_of_scope": out_of_scope,
         "integrity": integrity,
         "communication_links": links or {},
+        "data_assets_processed": data_processed or [],
     }
 
 
@@ -327,3 +328,40 @@ def test_lower_likelihood_steps_and_floors():
     assert apa._lower("very-likely", 2) == "unlikely"
     assert apa._lower("likely", 2) == "unlikely"      # clamps at floor
     assert apa._lower("unlikely", 1) == "unlikely"    # never below floor
+
+
+# ---- key-theft hop: node holds crypto-material + authenticated onward link ---
+def test_graph_loads_data_processed():
+    model = {"technical_assets": {
+        "Mid": _asset("mid", data_processed=["crypto-material"])}}
+    g = apa.build_reachability_graph(model)
+    assert g.nodes["mid"]["data_processed"] == {"crypto-material"}
+
+
+def _keytheft_model(onward_auth):
+    """entry(internet) -> mid(holds crypto-material) -> brake; the mid->brake
+    link auth varies so we can test the 'authenticated onward link' condition."""
+    return {"technical_assets": {
+        "Entry": _asset("entry", tags=["telematics", "connectivity"],
+                        internet=True, integrity="important"),
+        "Mid": _asset("mid", tags=["gateway"], integrity="critical",
+                      data_processed=["crypto-material"],
+                      links={"up": _link("entry")}),
+        "Brake": _asset("brake-ecu", tags=["ecu", "safety-critical"],
+                        integrity="mission-critical",
+                        links={"cmd": _link("mid", auth=onward_auth, tags=["can-fd"])}),
+    }}
+
+
+def test_keytheft_tag_emitted_when_onward_link_authenticated():
+    g = apa.build_reachability_graph(_keytheft_model("credentials"))
+    hops = apa.tag_path(g, ["entry", "mid", "brake-ecu"], "brake-ecu")
+    mid = next(h for h in hops if h["node"] == "mid")
+    assert "ATM-T0039" in mid["atm_ids"]
+
+
+def test_keytheft_tag_absent_when_onward_link_unauthenticated():
+    g = apa.build_reachability_graph(_keytheft_model("none"))
+    hops = apa.tag_path(g, ["entry", "mid", "brake-ecu"], "brake-ecu")
+    mid = next(h for h in hops if h["node"] == "mid")
+    assert "ATM-T0039" not in mid["atm_ids"]

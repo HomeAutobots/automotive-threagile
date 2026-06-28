@@ -323,6 +323,8 @@ def build_reachability_graph(model: dict, directed: bool = False):
             confidentiality=a.get("confidentiality", "internal"),
             integrity=a.get("integrity", "operational"),
             availability=a.get("availability", "operational"),
+            data_processed=set(a.get("data_assets_processed") or [])
+            | set(a.get("data_assets_stored") or []),
         )
 
     for a in assets.values():
@@ -425,6 +427,13 @@ def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
         # Target hop: terminal safety-critical node.
         if is_last and ("safety-critical" in ntags):
             add(*TARGET_TECH)
+        # Key-theft hop: node holds crypto-material AND must forge across an
+        # authenticated onward link (so stealing keys is a step). hsm defeats it.
+        if i < len(path) - 1:
+            nxt = path[i + 1]
+            if ("crypto-material" in ndata["data_processed"]
+                    and g[node][nxt]["auth"] != "none"):
+                add(*KEYTHEFT_TECH)
 
         hops.append({
             "node": node,
