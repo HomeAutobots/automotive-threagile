@@ -314,6 +314,8 @@ def build_reachability_graph(model: dict, directed: bool = False):
 
     for title, a in assets.items():
         aid = a["id"]
+        data_held = (set(a.get("data_assets_processed") or [])
+                     | set(a.get("data_assets_stored") or []))
         g.add_node(
             aid,
             title=title,
@@ -323,8 +325,7 @@ def build_reachability_graph(model: dict, directed: bool = False):
             confidentiality=a.get("confidentiality", "internal"),
             integrity=a.get("integrity", "operational"),
             availability=a.get("availability", "operational"),
-            data_processed=set(a.get("data_assets_processed") or [])
-            | set(a.get("data_assets_stored") or []),
+            data_held=data_held,
         )
 
     for a in assets.values():
@@ -429,9 +430,12 @@ def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
             add(*TARGET_TECH)
         # Key-theft hop: node holds crypto-material AND must forge across an
         # authenticated onward link (so stealing keys is a step). hsm defeats it.
+        # (Abstraction limit: treats any held crypto-material as the key for any
+        # authenticated onward link; over-claims if the node holds keys unrelated
+        # to that link.)
         if i < len(path) - 1:
             nxt = path[i + 1]
-            if ("crypto-material" in ndata["data_processed"]
+            if ("crypto-material" in ndata["data_held"]
                     and g[node][nxt]["auth"] != "none"):
                 add(*KEYTHEFT_TECH)
 

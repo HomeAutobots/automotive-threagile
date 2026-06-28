@@ -21,7 +21,8 @@ _spec.loader.exec_module(apa)
 
 # ---- Tiny model builders -----------------------------------------------------
 def _asset(aid, *, tags=None, internet=False, out_of_scope=False,
-           integrity="operational", links=None, data_processed=None):
+           integrity="operational", links=None, data_processed=None,
+           data_stored=None):
     return {
         "id": aid,
         "tags": tags or [],
@@ -30,6 +31,7 @@ def _asset(aid, *, tags=None, internet=False, out_of_scope=False,
         "integrity": integrity,
         "communication_links": links or {},
         "data_assets_processed": data_processed or [],
+        "data_assets_stored": data_stored or [],
     }
 
 
@@ -331,11 +333,18 @@ def test_lower_likelihood_steps_and_floors():
 
 
 # ---- key-theft hop: node holds crypto-material + authenticated onward link ---
-def test_graph_loads_data_processed():
+def test_graph_loads_data_held():
     model = {"technical_assets": {
         "Mid": _asset("mid", data_processed=["crypto-material"])}}
     g = apa.build_reachability_graph(model)
-    assert g.nodes["mid"]["data_processed"] == {"crypto-material"}
+    assert g.nodes["mid"]["data_held"] == {"crypto-material"}
+
+
+def test_graph_data_held_unions_processed_and_stored():
+    model = {"technical_assets": {
+        "N": _asset("n", data_processed=["a"], data_stored=["b"])}}
+    g = apa.build_reachability_graph(model)
+    assert g.nodes["n"]["data_held"] == {"a", "b"}
 
 
 def _keytheft_model(onward_auth):
