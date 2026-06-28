@@ -418,6 +418,10 @@ def test_two_soft_not_full_trio_still_one_bucket():
 
 
 def test_full_firmware_hardening_set_drops_two_buckets():
+    # The -2 gate is the full trio PRESENT on the node plus >=1 trio control
+    # matching THIS hop's techniques (here binary-hardening/memory-protection
+    # match the gw pivot) -- NOT all three matching this hop's techniques
+    # (attack-surface-reduction never matches a pivot hop, and need not).
     s = _score(_control_model([], ["binary-hardening", "memory-protection",
                                    "attack-surface-reduction"]))
     assert s["exploitation_likelihood"] == "unlikely"
@@ -439,3 +443,14 @@ def test_hsm_hard_match_floors_likelihood():
     assert s["base_likelihood"] == "very-likely"
     assert s["exploitation_likelihood"] == "unlikely"   # floored, not below
     assert s["control_adjustment"]["hard"] is True
+
+
+def test_hard_and_soft_both_present_stays_floored():
+    # hsm (hard, key-theft) AND binary-hardening (soft) on the same mid node:
+    # the hard floor must take precedence over the soft -1 (if/elif ordering).
+    g = apa.build_reachability_graph(_keytheft_model("credentials"))
+    g.nodes["mid"]["tags"].update({"hsm", "binary-hardening"})
+    path = ["entry", "mid", "brake-ecu"]
+    s = apa.score_path(g, path, "brake-ecu", apa.tag_path(g, path, "brake-ecu"))
+    assert s["control_adjustment"]["hard"] is True
+    assert s["exploitation_likelihood"] == "unlikely"

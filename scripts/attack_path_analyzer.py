@@ -530,6 +530,7 @@ def node_control_adjustment(g: nx.Graph, path: list, hops_tagged: list) -> dict:
     that hop (i.e. we're at a code-exec/priv-esc step). Path value = max across
     hops, capped at 2. Any hard match -> floor (handled by the caller).
     """
+    assert len(path) == len(hops_tagged), "hops_tagged must align with path"
     any_hard = False
     soft_buckets = 0
     matches = []
