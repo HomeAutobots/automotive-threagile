@@ -521,7 +521,33 @@ def weakest_auth_on_path(g: nx.Graph, path: list) -> str:
     return worst
 
 
-def score_path(g: nx.Graph, path: list, jewel: str) -> dict:
+def node_control_adjustment(g: nx.Graph, path: list, hops_tagged: list) -> dict:
+    """Per-hop control matches -> a likelihood adjustment.
+
+    Returns {"hard": bool, "soft_buckets": 0|1|2, "matches": [per-hop dicts]}.
+    soft = -1 per hop with >=1 soft match; -2 only when a hop's node carries the
+    COMPLETE firmware-hardening set AND at least one of those controls matched
+    that hop (i.e. we're at a code-exec/priv-esc step). Path value = max across
+    hops, capped at 2. Any hard match -> floor (handled by the caller).
+    """
+    any_hard = False
+    soft_buckets = 0
+    matches = []
+    for node, hop in zip(path, hops_tagged):
+        ntags = g.nodes[node]["tags"]
+        hop_techs = set(hop["attack_ids"]) | set(hop["atm_ids"])
+        m = match_hop_controls(ntags, hop_techs)
+        matches.append({"node": node, **m})
+        if m["hard"]:
+            any_hard = True
+        if m["soft"]:
+            full_fh = (FIRMWARE_HARDENING_SET <= ntags
+                       and bool(FIRMWARE_HARDENING_SET & set(m["soft"])))
+            soft_buckets = max(soft_buckets, 2 if full_fh else 1)
+    return {"hard": any_hard, "soft_buckets": soft_buckets, "matches": matches}
+
+
+def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None) -> dict:
     hops = len(path) - 1
     worst_auth = weakest_auth_on_path(g, path)
     # Likelihood: unauthenticated hops + short paths raise it.
@@ -531,15 +557,26 @@ def score_path(g: nx.Graph, path: list, jewel: str) -> dict:
         likelihood = "likely"
     else:
         likelihood = "unlikely"
+    base_likelihood = likelihood
+    # Node hardening controls break the chain: lower (soft) or floor (hard).
+    if hops_tagged is None:
+        hops_tagged = tag_path(g, path, jewel)
+    adj = node_control_adjustment(g, path, hops_tagged)
+    if adj["hard"]:
+        likelihood = "unlikely"            # floor; risk retained, never erased
+    elif adj["soft_buckets"]:
+        likelihood = _lower(likelihood, adj["soft_buckets"])
     # Impact: driven by the target's integrity rating (safety actuation).
     impact = "very-high" if g.nodes[jewel]["integrity"] in (
         "mission-critical", "critical") else "high"
     return {
         "hops": hops,
         "weakest_auth": worst_auth,
+        "base_likelihood": base_likelihood,
         "exploitation_likelihood": likelihood,
         "exploitation_impact": impact,
         "severity": calculate_severity(likelihood, impact),
+        "control_adjustment": adj,
     }
 
 
@@ -560,7 +597,7 @@ def analyze(g: nx.Graph, cutoff: int) -> dict:
                 "num_paths": len(all_paths),
                 "hops_tagged": hops_tagged,
                 "realism": path_realism(hops_tagged),
-                **score_path(g, shortest, j),
+                **score_path(g, shortest, j, hops_tagged),
             })
             # Minimum node cut = fewest nodes whose removal severs s->j.
             # (s and j are excluded from the cut by definition.)

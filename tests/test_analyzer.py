@@ -374,3 +374,68 @@ def test_keytheft_tag_absent_when_onward_link_unauthenticated():
     hops = apa.tag_path(g, ["entry", "mid", "brake-ecu"], "brake-ecu")
     mid = next(h for h in hops if h["node"] == "mid")
     assert "ATM-T0039" not in mid["atm_ids"]
+
+
+# ---- node-control adjustment in score_path -----------------------------------
+def _control_model(entry_tags, gw_tags):
+    """internet entry -> gateway(gw_tags) -> brake; weakest auth none."""
+    return {"technical_assets": {
+        "Entry": _asset("entry", tags=["telematics", "connectivity"] + entry_tags,
+                        internet=True, integrity="important"),
+        "GW": _asset("gw", tags=["gateway"] + gw_tags, integrity="critical",
+                     links={"up": _link("entry")}),
+        "Brake": _asset("brake-ecu", tags=["ecu", "safety-critical"],
+                        integrity="mission-critical",
+                        links={"cmd": _link("gw", tags=["can-fd"])}),
+    }}
+
+
+def _score(model):
+    g = apa.build_reachability_graph(model)
+    path = ["entry", "gw", "brake-ecu"]
+    return apa.score_path(g, path, "brake-ecu", apa.tag_path(g, path, "brake-ecu"))
+
+
+def test_no_controls_keeps_base_critical():
+    s = _score(_control_model([], []))
+    assert s["base_likelihood"] == "very-likely"
+    assert s["exploitation_likelihood"] == "very-likely"
+    assert s["severity"] == "critical"
+
+
+def test_one_soft_control_drops_one_bucket():
+    # binary-hardening on the entry node defeats the entry technique T0883.
+    s = _score(_control_model(["binary-hardening"], []))
+    assert s["exploitation_likelihood"] == "likely"
+    assert s["severity"] == "high"
+
+
+def test_two_soft_not_full_trio_still_one_bucket():
+    # gw pivot emits T0866/T0867; binary-hardening + memory-protection both
+    # match, but attack-surface-reduction is absent -> not the full trio -> -1.
+    s = _score(_control_model([], ["binary-hardening", "memory-protection"]))
+    assert s["exploitation_likelihood"] == "likely"
+
+
+def test_full_firmware_hardening_set_drops_two_buckets():
+    s = _score(_control_model([], ["binary-hardening", "memory-protection",
+                                   "attack-surface-reduction"]))
+    assert s["exploitation_likelihood"] == "unlikely"
+    assert s["severity"] == "elevated"
+
+
+def test_control_with_no_matching_technique_has_no_effect():
+    # sensor-plausibility defeats ATM-T0003/4, never emitted on this path.
+    s = _score(_control_model([], ["sensor-plausibility"]))
+    assert s["exploitation_likelihood"] == "very-likely"
+    assert s["control_adjustment"]["soft_buckets"] == 0
+
+
+def test_hsm_hard_match_floors_likelihood():
+    g = apa.build_reachability_graph(_keytheft_model("credentials"))
+    g.nodes["mid"]["tags"].add("hsm")
+    path = ["entry", "mid", "brake-ecu"]
+    s = apa.score_path(g, path, "brake-ecu", apa.tag_path(g, path, "brake-ecu"))
+    assert s["base_likelihood"] == "very-likely"
+    assert s["exploitation_likelihood"] == "unlikely"   # floored, not below
+    assert s["control_adjustment"]["hard"] is True
