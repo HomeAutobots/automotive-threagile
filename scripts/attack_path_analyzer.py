@@ -148,8 +148,9 @@ CONTROL_CATALOG = {
     "ids":                      {"effect": "soft", "defeats": {"T0867", "T0866",
                                                                "ATM-T0051", "ATM-T0052"}},
     "sensor-plausibility":      {"effect": "soft", "defeats": {"ATM-T0003", "ATM-T0004"}},
-    # hard -- only hsm can match today (key-theft). The three below are DEFINED
-    # but INERT until the analyzer emits persistence techniques (future work).
+    # hard -- hsm activates once the key-theft hop is wired into tag_path (next
+    # task); secure-boot/firmware-signing/anti-rollback stay inert until the
+    # analyzer emits persistence techniques (later work).
     "hsm":                      {"effect": "hard", "defeats": {"ATM-T0039", "ATM-T0040", "T1552"}},
     "secure-boot":              {"effect": "hard", "defeats": {"T1542", "T0857"}},
     "firmware-signing":         {"effect": "hard", "defeats": {"T1693", "T0843"}},

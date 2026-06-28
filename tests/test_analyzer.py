@@ -313,6 +313,15 @@ def test_match_hop_controls_no_intersection_is_empty():
         "hard": [], "soft": []}
 
 
+def test_match_hop_controls_joint_and_sorted():
+    # one hard + two soft, all matching their hop techniques; soft list sorted.
+    result = apa.match_hop_controls(
+        {"hsm", "memory-protection", "binary-hardening"},
+        {"ATM-T0039", "T0883", "T0866"})
+    assert result == {"hard": ["hsm"],
+                      "soft": ["binary-hardening", "memory-protection"]}
+
+
 def test_lower_likelihood_steps_and_floors():
     assert apa._lower("very-likely", 1) == "likely"
     assert apa._lower("very-likely", 2) == "unlikely"
