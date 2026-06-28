@@ -53,6 +53,12 @@ tags_available:
   - external
   - physical
   - secure-boot
+  - binary-hardening
+  - memory-protection
+  - attack-surface-reduction
+  - ids
+  - sensor-plausibility
+  - anti-rollback
 
 data_assets:
 
