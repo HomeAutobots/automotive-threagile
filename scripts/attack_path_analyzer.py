@@ -519,6 +519,9 @@ def _controls_str(adj: dict) -> str:
         return "controls: none matched"
     effect = ("floored (hard control)" if adj["hard"]
               else f"-{adj['soft_buckets']} likelihood" if adj["soft_buckets"]
+              # Unreachable defensive fallback: a non-empty `fired` implies at
+              # least one hard match or soft_buckets >= 1, so neither arm above
+              # can be false here. Kept so the ternary is total.
               else "no net effect")
     return f"controls: {', '.join(fired)} ({effect})"
 

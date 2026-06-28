@@ -16,7 +16,7 @@ individual_risk_categories:
     model_failure_possible_reason: false
     cwe: 923
     risks_identified:
-      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Brake ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141)'
+      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Brake ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | controls: none matched'
       : severity: critical
         exploitation_likelihood: very-likely
         exploitation_impact: very-high
@@ -24,7 +24,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Steering ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141)'
+      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Steering ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | controls: none matched'
       : severity: critical
         exploitation_likelihood: very-likely
         exploitation_impact: very-high
@@ -32,7 +32,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Transmission ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141)'
+      ? '<b>Attack path</b> Head Unit (IVI) -> CAN Bridge (V850) -> Transmission ECU [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | controls: none matched'
       : severity: critical
         exploitation_likelihood: very-likely
         exploitation_impact: very-high
