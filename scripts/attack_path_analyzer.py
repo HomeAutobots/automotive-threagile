@@ -511,6 +511,18 @@ def _realism_str(r: dict, top: int = 3) -> str:
             f"attested; {ids})")
 
 
+def _controls_str(adj: dict) -> str:
+    """Compact annotation of which node controls fired and the net effect."""
+    fired = [f"{m['node']}:{'/'.join(m['hard'] + m['soft'])}"
+             for m in adj["matches"] if (m["hard"] or m["soft"])]
+    if not fired:
+        return "controls: none matched"
+    effect = ("floored (hard control)" if adj["hard"]
+              else f"-{adj['soft_buckets']} likelihood" if adj["soft_buckets"]
+              else "no net effect")
+    return f"controls: {', '.join(fired)} ({effect})"
+
+
 # ---- Analysis ---------------------------------------------------------------
 def weakest_auth_on_path(g: nx.Graph, path: list) -> str:
     worst = "two-factor"
@@ -625,7 +637,8 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                  f"[{p['hops']}h, {p['num_paths']} path(s), weakest auth {p['weakest_auth']}] "
                  f"| ATT&CK: {_attack_chain(hops)} "
                  f"| ATM: {_atm_chain(hops)} "
-                 f"| {_realism_str(p['realism'])}")
+                 f"| {_realism_str(p['realism'])} "
+                 f"| {_controls_str(p['control_adjustment'])}")
         risks_identified[title] = {
             "severity": p["severity"],
             "exploitation_likelihood": p["exploitation_likelihood"],

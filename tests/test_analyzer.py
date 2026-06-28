@@ -454,3 +454,17 @@ def test_hard_and_soft_both_present_stays_floored():
     s = apa.score_path(g, path, "brake-ecu", apa.tag_path(g, path, "brake-ecu"))
     assert s["control_adjustment"]["hard"] is True
     assert s["exploitation_likelihood"] == "unlikely"
+
+
+def test_emit_risks_title_names_fired_controls():
+    # Two soft controls on the gw pivot fire against its lateral-movement
+    # techniques; the emitted path-risk title must name the controls.
+    g = apa.build_reachability_graph(
+        _control_model([], ["binary-hardening", "memory-protection"]))
+    result = apa.analyze(g, cutoff=10)
+    emitted = apa.emit_risks(g, result)
+    titles = list(
+        emitted["individual_risk_categories"]
+        ["Multi-Hop Attack Path To Safety-Critical ECU"]["risks_identified"]
+    )
+    assert any("binary-hardening" in t for t in titles)
