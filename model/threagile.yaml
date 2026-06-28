@@ -352,7 +352,7 @@ technical_assets:
     usage: business
     size: system
     technology: application-server
-    tags: [gateway, connectivity, secure-boot, firmware-signing]
+    tags: [gateway, connectivity, secure-boot, firmware-signing, binary-hardening, memory-protection, attack-surface-reduction, ids]
     internet: false
     machine: physical
     encryption: none
@@ -754,7 +754,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, safety-critical, chassis]
+    tags: [ecu, safety-critical, chassis, memory-protection]
     internet: false
     machine: physical
     encryption: none
@@ -1176,7 +1176,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [ecu, chassis, safety-critical]
+    tags: [ecu, chassis, safety-critical, memory-protection]
     internet: false
     machine: physical
     encryption: none
