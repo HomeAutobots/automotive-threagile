@@ -123,6 +123,65 @@ TARGET_TECH = (
     "ATM-TA0013",
 )
 
+# Key-theft hop: emitted on a node that HOLDS crypto-material AND must forge
+# across an AUTHENTICATED onward link (so stealing keys is a real step). The
+# hsm control defeats it. (Persistence techniques are intentionally NOT emitted
+# yet -- see the spec's "key-theft now, persistence later" decision.)
+KEYTHEFT_TECH = (
+    ["T1552"], ["Unsecured Credentials"],
+    ["ATM-T0039", "ATM-T0040"], ["ECU Credential Dumping", "Unsecured Credentials"],
+    "ATM-TA0007",  # Credential Access
+)
+
+# ---- ECU hardening controls (node tags that break attack chains) ------------
+# Each control tag -> the technique IDs (ATT&CK or ATM) it defeats, and whether
+# the effect is "soft" (raise attacker cost -> lower likelihood) or "hard"
+# (cryptographic/root-of-trust -> floor likelihood). The defeats sets are pinned
+# to the technique IDs this analyzer actually emits per hop (see ENTRY_RULES,
+# PIVOT_TECH, KEYTHEFT_TECH above) -- if an ID here is never emitted on any hop,
+# the control is inert.
+CONTROL_CATALOG = {
+    # soft -- defense-in-depth on the node's firmware/runtime
+    "binary-hardening":         {"effect": "soft", "defeats": {"T0883", "T0860", "T0866"}},
+    "memory-protection":        {"effect": "soft", "defeats": {"T0866", "T0867"}},
+    "attack-surface-reduction": {"effect": "soft", "defeats": {"T0883", "T0860"}},
+    "ids":                      {"effect": "soft", "defeats": {"T0867", "T0866",
+                                                               "ATM-T0051", "ATM-T0052"}},
+    "sensor-plausibility":      {"effect": "soft", "defeats": {"ATM-T0003", "ATM-T0004"}},
+    # hard -- only hsm can match today (key-theft). The three below are DEFINED
+    # but INERT until the analyzer emits persistence techniques (future work).
+    "hsm":                      {"effect": "hard", "defeats": {"ATM-T0039", "ATM-T0040", "T1552"}},
+    "secure-boot":              {"effect": "hard", "defeats": {"T1542", "T0857"}},
+    "firmware-signing":         {"effect": "hard", "defeats": {"T1693", "T0843"}},
+    "anti-rollback":            {"effect": "hard", "defeats": {"T0800", "ATM-T0021", "ATM-T0054"}},
+}
+
+# The full firmware-hardening image (all three present) is what earns -2.
+FIRMWARE_HARDENING_SET = {"binary-hardening", "memory-protection", "attack-surface-reduction"}
+
+# Likelihood ladder, weakest first; "lowering" steps toward index 0 (the floor).
+LADDER = ["unlikely", "likely", "very-likely", "frequent"]
+
+
+def _lower(likelihood: str, buckets: int) -> str:
+    """Step a likelihood down the ladder by N buckets, clamped at the floor."""
+    i = LADDER.index(likelihood)
+    return LADDER[max(0, i - buckets)]
+
+
+def match_hop_controls(node_tags: set, hop_techs: set) -> dict:
+    """Controls on this node that defeat a technique used at this hop.
+
+    Returns {"hard": [tags], "soft": [tags]} (sorted, deterministic).
+    """
+    hard, soft = [], []
+    for tag in sorted(node_tags):
+        ctl = CONTROL_CATALOG.get(tag)
+        if not ctl or not (ctl["defeats"] & hop_techs):
+            continue
+        (hard if ctl["effect"] == "hard" else soft).append(tag)
+    return {"hard": hard, "soft": soft}
+
 # ---- Path-realism weighting (SELF-CONTAINED) --------------------------------
 # Auto-ISAC ATM "campaigns" (ATM-Pxxxx) are documented, real-world vehicle
 # attacks; each is linked (STIX 'uses' relationships) to the ATM techniques it
