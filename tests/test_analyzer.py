@@ -295,3 +295,26 @@ def test_mitigation_hint_names_chokepoint_gateway():
         g, result["paths"][0]["shortest"], result["chokepoints"])
     assert "mitigate:" in hint
     assert "Gateway" in hint  # the gateway/chokepoint on this path
+
+
+# ---- ECU hardening controls: catalog + matching ------------------------------
+def test_match_hop_controls_soft_and_hard():
+    # entry technique T0883 is defeated by binary-hardening (soft);
+    # key-theft ATM-T0039 is defeated by hsm (hard).
+    soft = apa.match_hop_controls({"binary-hardening"}, {"T0883"})
+    assert soft == {"hard": [], "soft": ["binary-hardening"]}
+    hard = apa.match_hop_controls({"hsm"}, {"ATM-T0039"})
+    assert hard == {"hard": ["hsm"], "soft": []}
+
+
+def test_match_hop_controls_no_intersection_is_empty():
+    # sensor-plausibility defeats ATM-T0003/4 only; a pivot hop (T0866) -> no match.
+    assert apa.match_hop_controls({"sensor-plausibility"}, {"T0866"}) == {
+        "hard": [], "soft": []}
+
+
+def test_lower_likelihood_steps_and_floors():
+    assert apa._lower("very-likely", 1) == "likely"
+    assert apa._lower("very-likely", 2) == "unlikely"
+    assert apa._lower("likely", 2) == "unlikely"      # clamps at floor
+    assert apa._lower("unlikely", 1) == "unlikely"    # never below floor
