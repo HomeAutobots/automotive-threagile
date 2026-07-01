@@ -377,10 +377,16 @@ def test_keytheft_tag_absent_when_onward_link_unauthenticated():
 
 
 # ---- node-control adjustment in score_path -----------------------------------
-def _control_model(entry_tags, gw_tags):
-    """internet entry -> gateway(gw_tags) -> brake; weakest auth none."""
+def _control_model(entry_tags, gw_tags, entry_base=("telematics", "connectivity")):
+    """internet entry -> gateway(gw_tags) -> brake; weakest auth none.
+
+    entry_base sets the entry interface. The default 'telematics' is a
+    DEMONSTRATED 2024-2025 foothold (R1), so entry-hop soft controls are NOT
+    credited there; pass a non-demonstrated interface (e.g. ('connectivity',)) to
+    exercise ordinary entry-hop soft crediting.
+    """
     return {"technical_assets": {
-        "Entry": _asset("entry", tags=["telematics", "connectivity"] + entry_tags,
+        "Entry": _asset("entry", tags=list(entry_base) + entry_tags,
                         internet=True, integrity="important"),
         "GW": _asset("gw", tags=["gateway"] + gw_tags, integrity="critical",
                      links={"up": _link("entry")}),
@@ -403,11 +409,29 @@ def test_no_controls_keeps_base_critical():
     assert s["severity"] == "critical"
 
 
-def test_one_soft_control_drops_one_bucket():
-    # binary-hardening on the entry node defeats the entry technique T0883.
+def test_soft_control_on_demonstrated_entry_not_credited():
+    # binary-hardening on the entry node defeats the entry technique T0883, BUT
+    # the entry is a demonstrated 2024-2025 foothold (telematics): Pwn2Own popped
+    # exactly such hardened units, so the entry-hop soft credit is dropped (R1,
+    # docs/research/06). Likelihood stays at the structural baseline.
     s = _score(_control_model(["binary-hardening"], []))
+    assert s["exploitation_likelihood"] == "very-likely"
+    adj = s["control_adjustment"]
+    assert adj["soft_buckets"] == 0
+    assert adj["entry_corroboration"]["tier"] == "demonstrated"
+    assert adj["matches"][0]["soft_suppressed"] == ["binary-hardening"]
+    assert adj["matches"][0]["soft"] == []
+
+
+def test_soft_control_on_ordinary_entry_still_credited():
+    # Same soft control on a NON-demonstrated entry interface (connectivity has no
+    # 2024-2025 foothold exploit in the corpus) -> the entry-hop credit stands.
+    s = _score(_control_model(["binary-hardening"], [], entry_base=("connectivity",)))
     assert s["exploitation_likelihood"] == "likely"
     assert s["severity"] == "high"
+    adj = s["control_adjustment"]
+    assert adj["entry_corroboration"] is None
+    assert adj["soft_buckets"] == 1
 
 
 def test_two_soft_not_full_trio_still_one_bucket():
@@ -454,6 +478,81 @@ def test_hard_and_soft_both_present_stays_floored():
     s = apa.score_path(g, path, "brake-ecu", apa.tag_path(g, path, "brake-ecu"))
     assert s["control_adjustment"]["hard"] is True
     assert s["exploitation_likelihood"] == "unlikely"
+
+
+# ---- R1: entry-corroboration (demonstrated 2024-2025 footholds) -------------
+def test_entry_corroboration_unions_and_dedupes():
+    # TCU carries both 'cellular' and 'telematics'; campaigns union, deduped,
+    # deterministic (sorted tag order, insertion-ordered campaigns).
+    ec = apa.entry_corroboration({"telematics", "cellular", "ecu"})
+    assert ec["tier"] == "demonstrated"
+    assert ec["campaigns"] == [
+        "P2O-AUTO-2024", "KIA-DEALER-2024", "SUBARU-STARLINK-2025"]
+
+
+def test_entry_corroboration_none_for_undemonstrated_interface():
+    # Generic RF surfaces and the sensor surfaces are deliberately excluded:
+    # no 2024-2025 foothold demo (sensor spoofing is R2, not R1).
+    assert apa.entry_corroboration({"connectivity", "bluetooth", "uwb"}) is None
+    assert apa.entry_corroboration({"v2x", "gnss"}) is None
+    assert apa.entry_corroboration({"ecu", "gateway"}) is None
+
+
+def test_entry_campaign_ids_are_documented():
+    # Every campaign referenced by the map must have a human-readable name.
+    for camps in apa.ENTRY_CORROBORATION.values():
+        for c in camps:
+            assert c in apa.ENTRY_CAMPAIGN_NAMES, f"{c} has no ENTRY_CAMPAIGN_NAMES entry"
+
+
+def test_entry_corroboration_never_leaks_into_realism():
+    # A demonstrated ENTRY must not change CHAIN realism (entries != chains,
+    # docs/research/06): the entry campaign IDs must never appear among the
+    # realism campaigns, which are derived only from ATM_TECHNIQUE_CAMPAIGNS.
+    g = apa.build_reachability_graph(_control_model([], []))
+    p = apa.analyze(g, cutoff=10)["paths"][0]
+    assert p["control_adjustment"]["entry_corroboration"]["tier"] == "demonstrated"
+    realism_ids = {c for c, _ in p["realism"]["campaigns"]}
+    assert not (realism_ids & set(apa.ENTRY_CAMPAIGN_NAMES))
+
+
+def test_demonstrated_entry_suppression_leaves_hard_floor_intact():
+    # Suppressing the entry hop's SOFT credit must not disturb a hard floor from
+    # a downstream node: hsm on 'mid' still floors even though the entry
+    # (telematics) is a demonstrated foothold.
+    g = apa.build_reachability_graph(_keytheft_model("credentials"))
+    g.nodes["mid"]["tags"].add("hsm")
+    path = ["entry", "mid", "brake-ecu"]
+    s = apa.score_path(g, path, "brake-ecu", apa.tag_path(g, path, "brake-ecu"))
+    assert s["control_adjustment"]["entry_corroboration"]["tier"] == "demonstrated"
+    assert s["control_adjustment"]["hard"] is True
+    assert s["exploitation_likelihood"] == "unlikely"
+
+
+def test_emit_title_carries_entry_corroboration_and_suppression():
+    # The emitted path-risk title must name the demonstrated foothold AND report
+    # the entry hardening that was not credited.
+    g = apa.build_reachability_graph(_control_model(["binary-hardening"], []))
+    emitted = apa.emit_risks(g, apa.analyze(g, cutoff=10))
+    titles = list(emitted["individual_risk_categories"]
+                  ["Multi-Hop Attack Path To Safety-Critical ECU"]["risks_identified"])
+    assert titles, "expected at least one path risk"
+    t = titles[0]
+    assert "entry: demonstrated foothold" in t
+    assert "P2O-AUTO-2024" in t
+    assert "entry-hardening not credited on demonstrated foothold" in t
+    assert "binary-hardening" in t
+
+
+def test_emit_title_marks_undemonstrated_entry_unchanged():
+    g = apa.build_reachability_graph(
+        _control_model([], [], entry_base=("connectivity",)))
+    emitted = apa.emit_risks(g, apa.analyze(g, cutoff=10))
+    titles = list(emitted["individual_risk_categories"]
+                  ["Multi-Hop Attack Path To Safety-Critical ECU"]["risks_identified"])
+    assert titles
+    assert all("entry: no public 2024-2025 exploit (prior unchanged)" in t
+               for t in titles)
 
 
 def test_emit_risks_title_names_fired_controls():
