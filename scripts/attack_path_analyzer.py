@@ -247,6 +247,61 @@ ATM_TECHNIQUE_CAMPAIGNS = {
     "ATM-T0077": ["ATM-P0083"],
 }
 
+# ---- Entry-corroboration (post-2023 demonstrated FOOTHOLDS) ------------------
+# SEPARATE from ATM_TECHNIQUE_CAMPAIGNS above. Those weight the CHAIN (techniques
+# a single real campaign chained all the way to the jewel). This weights the
+# ENTRY hop ONLY: publicly demonstrated 2024-2025 exploits that popped an
+# internet/RF-exposed component. The load-bearing finding of docs/research/06 is
+# a NEGATIVE -- NONE of these demos pivoted from the exposed component into an
+# in-vehicle bus or a safety function -- so this must NEVER raise a path's
+# realism label or its severity above the structural baseline. Its ONLY scoring
+# effect: a demonstrated foothold cannot be discounted by the entry node's OWN
+# firmware-hardening soft controls (Pwn2Own popped those hardened units), so the
+# entry hop's soft-control credit is dropped (see node_control_adjustment). The
+# device RCEs have no canonical ATM/ATT&CK technique of their own; they
+# corroborate the entry technique the analyzer already tags for that interface
+# (T0883/T0860 + ATM-T0012). The cloud-API campaigns (Kia/Subaru) are MITRE
+# ATT&CK *Enterprise* (T1190/T1078/T1213) -- out of this analyzer's ICS/ATM chain
+# scope, recorded here as metadata only. All IDs verified vs frameworks/ 2026-07-01.
+ENTRY_CAMPAIGN_NAMES = {
+    "P2O-AUTO-2024": "Pwn2Own Automotive 2024 (Tesla modem root, IVI, EV chargers)",
+    "P2O-AUTO-2025": "Pwn2Own Automotive 2025 (IVI, EV chargers, Automotive Grade Linux)",
+    "KIA-DEALER-2024": "Kia dealer-portal telematics authz bypass -> remote command",
+    "SUBARU-STARLINK-2025": "Subaru STARLINK admin account takeover -> remote command",
+}
+# Entry-interface trigger tag -> the demonstrated campaigns that popped it. Keyed
+# by the SAME node tags ENTRY_RULES trigger on, so a path's entry node is matched
+# by tag. Only interfaces with a 2024-2025 public exploit appear; absence == "no
+# public exploit -> entry prior unchanged". Kept deliberately narrow: generic
+# bluetooth/wifi/uwb/connectivity and the v2x/gnss sensor surfaces are NOT here
+# (no 2024-2025 foothold demo in the corpus; sensor spoofing is R2, not R1).
+ENTRY_CORROBORATION = {
+    "cellular":     ["P2O-AUTO-2024"],                          # Tesla Modem baseband root
+    "telematics":   ["P2O-AUTO-2024", "KIA-DEALER-2024",        # modem + backend command
+                     "SUBARU-STARLINK-2025"],                   # injection reaching the vehicle
+    "infotainment": ["P2O-AUTO-2024", "P2O-AUTO-2025"],         # Tesla IVI; Sony/Alpine/Kenwood
+    "charging":     ["P2O-AUTO-2024", "P2O-AUTO-2025"],         # ChargePoint/JuiceBox/Autel/Tesla WC
+}
+
+
+def entry_corroboration(node_tags: set) -> dict:
+    """Post-2023 demonstrated-foothold evidence for an entry node, or None.
+
+    Unions the campaigns of every entry-interface tag on the node. ENTRY-ONLY:
+    this never feeds path_realism (see the ENTRY_CORROBORATION comment). Returns
+    ``{"tier": "demonstrated", "campaigns": [ids...]}`` (campaigns deduped,
+    deterministic) or ``None`` when no public 2024-2025 exploit corroborates the
+    interface -- in which case the entry prior is left unchanged.
+    """
+    campaigns = []
+    for tag in sorted(node_tags):
+        for c in ENTRY_CORROBORATION.get(tag, ()):
+            if c not in campaigns:
+                campaigns.append(c)
+    if not campaigns:
+        return None
+    return {"tier": "demonstrated", "campaigns": campaigns}
+
 
 def calculate_severity(likelihood: str, impact: str) -> str:
     """Approximates Threagile's likelihood x impact -> severity bucketing.
@@ -511,19 +566,35 @@ def _realism_str(r: dict, top: int = 3) -> str:
             f"attested; {ids})")
 
 
+def _entry_corroboration_str(ec: dict) -> str:
+    """Entry-hop corroboration annotation for the risk title (campaign IDs only).
+
+    ``ec`` is the ``entry_corroboration`` dict (or None) from the path's control
+    adjustment. Reported SEPARATELY from realism: it grades the entry FOOTHOLD,
+    not the chain (docs/research/06).
+    """
+    if not ec:
+        return "entry: no public 2024-2025 exploit (prior unchanged)"
+    return f"entry: {ec['tier']} foothold ({', '.join(ec['campaigns'])})"
+
+
 def _controls_str(adj: dict) -> str:
     """Compact annotation of which node controls fired and the net effect."""
     fired = [f"{m['node']}:{'/'.join(m['hard'] + m['soft'])}"
              for m in adj["matches"] if (m["hard"] or m["soft"])]
-    if not fired:
+    suppressed = [f"{m['node']}:{'/'.join(m['soft_suppressed'])}"
+                  for m in adj["matches"] if m.get("soft_suppressed")]
+    if not fired and not suppressed:
         return "controls: none matched"
     effect = ("floored (hard control)" if adj["hard"]
               else f"-{adj['soft_buckets']} likelihood" if adj["soft_buckets"]
-              # Unreachable defensive fallback: a non-empty `fired` implies at
-              # least one hard match or soft_buckets >= 1, so neither arm above
-              # can be false here. Kept so the ternary is total.
               else "no net effect")
-    return f"controls: {', '.join(fired)} ({effect})"
+    head = (f"controls: {', '.join(fired)} ({effect})" if fired
+            else f"controls: none credited ({effect})")
+    if suppressed:
+        head += (f"; entry-hardening not credited on demonstrated foothold: "
+                 f"{', '.join(suppressed)}")
+    return head
 
 
 # ---- Analysis ---------------------------------------------------------------
@@ -539,28 +610,45 @@ def weakest_auth_on_path(g: nx.Graph, path: list) -> str:
 def node_control_adjustment(g: nx.Graph, path: list, hops_tagged: list) -> dict:
     """Per-hop control matches -> a likelihood adjustment.
 
-    Returns {"hard": bool, "soft_buckets": 0|1|2, "matches": [per-hop dicts]}.
+    Returns {"hard": bool, "soft_buckets": 0|1|2, "matches": [per-hop dicts],
+    "entry_corroboration": dict|None}.
     soft = -1 per hop with >=1 soft match; -2 only when a hop's node carries the
     COMPLETE firmware-hardening set AND at least one of those controls matched
     that hop (i.e. we're at a code-exec/priv-esc step). Path value = max across
     hops, capped at 2. Any hard match -> floor (handled by the caller).
+
+    Exception -- demonstrated entry foothold: if the ENTRY node (hop 0) is a
+    demonstrated 2024-2025 foothold (entry_corroboration), its OWN soft controls
+    are NOT credited on the entry hop. Real teams popped exactly those hardened
+    interfaces (Pwn2Own), so crediting the entry node's firmware-hardening there
+    would over-discount an empirically-easy foothold (docs/research/06). The
+    dropped controls are recorded per-hop as ``soft_suppressed`` for transparency.
+    Hard (crypto root-of-trust) controls were NOT shown defeated at entry, so
+    they still floor; downstream pivot/target controls are untouched.
     """
     assert len(path) == len(hops_tagged), "hops_tagged must align with path"
+    entry_demo = entry_corroboration(g.nodes[path[0]]["tags"]) if path else None
     any_hard = False
     soft_buckets = 0
     matches = []
-    for node, hop in zip(path, hops_tagged):
+    for i, (node, hop) in enumerate(zip(path, hops_tagged)):
         ntags = g.nodes[node]["tags"]
         hop_techs = set(hop["attack_ids"]) | set(hop["atm_ids"])
         m = match_hop_controls(ntags, hop_techs)
-        matches.append({"node": node, **m})
+        rec = {"node": node, **m}
         if m["hard"]:
             any_hard = True
         if m["soft"]:
-            full_fh = (FIRMWARE_HARDENING_SET <= ntags
-                       and bool(FIRMWARE_HARDENING_SET & set(m["soft"])))
-            soft_buckets = max(soft_buckets, 2 if full_fh else 1)
-    return {"hard": any_hard, "soft_buckets": soft_buckets, "matches": matches}
+            if i == 0 and entry_demo:
+                rec["soft_suppressed"] = m["soft"]
+                rec["soft"] = []            # not credited on a demonstrated entry
+            else:
+                full_fh = (FIRMWARE_HARDENING_SET <= ntags
+                           and bool(FIRMWARE_HARDENING_SET & set(m["soft"])))
+                soft_buckets = max(soft_buckets, 2 if full_fh else 1)
+        matches.append(rec)
+    return {"hard": any_hard, "soft_buckets": soft_buckets, "matches": matches,
+            "entry_corroboration": entry_demo}
 
 
 def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None) -> dict:
@@ -641,6 +729,7 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                  f"| ATT&CK: {_attack_chain(hops)} "
                  f"| ATM: {_atm_chain(hops)} "
                  f"| {_realism_str(p['realism'])} "
+                 f"| {_entry_corroboration_str(p['control_adjustment']['entry_corroboration'])} "
                  f"| {_controls_str(p['control_adjustment'])}")
         risks_identified[title] = {
             "severity": p["severity"],
@@ -688,7 +777,15 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                            "'partially-corroborated' = individual techniques are "
                            "attested but not chained in one campaign; 'theoretical' = "
                            "no campaign evidence (informational, does not change "
-                           "severity).",
+                           "severity). The 'entry:' tag grades the FOOTHOLD only, "
+                           "kept separate from chain realism: 'demonstrated foothold' "
+                           "names post-2023 public exploits (Pwn2Own Automotive 2024/"
+                           "2025, Kia/Subaru telematics) that popped that exposed "
+                           "interface -- none of which pivoted to a bus/safety function "
+                           "(docs/research/06), so it never raises realism or severity; "
+                           "its one effect is that the entry node's own firmware-"
+                           "hardening is not credited as a likelihood discount on a "
+                           "demonstrably-poppable interface.",
             "impact": "Remote attacker can inject control messages affecting "
                       "vehicle safety functions (steering, braking, transmission).",
             "asvs": "V1 - Architecture, Design and Threat Modeling",
