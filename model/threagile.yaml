@@ -814,7 +814,7 @@ technical_assets:
     confidentiality: internal
     integrity: mission-critical
     availability: critical
-    justification_cia_rating: HV safety; thermal/insulation protection.
+    justification_cia_rating: HV safety; thermal/HV-shock/no-fire outcome goals (ASIL D) govern the mission-critical integrity; charge/current-monitoring goals are ASIL C (see docs/research/07).
     data_assets_processed: [safety-control-messages]
 
   On-Board Charger:
