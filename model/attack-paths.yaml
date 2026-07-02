@@ -1,7 +1,7 @@
 individual_risk_categories:
   Multi-Hop Attack Path To Safety-Critical ECU:
     id: attack-path-to-safety-critical-ecu
-    description: 'An internet-exposed asset can reach a safety-critical ECU across one or more intermediate nodes/buses. Each risk title carries the per-hop technique chain: the ''ATT&CK:'' and ''ATM:'' arrows are aligned hop-by-hop with the path''s ''->'' node chain (one entry per node, ''/'' separates co-occurring techniques on a hop, ''-'' means that hop matched no mapping rule). ATT&CK IDs are MITRE ATT&CK v19.1 (ICS); ATM IDs are Auto-ISAC ATM technique IDs. Roles: entry=Initial Access, gateway/zone=Lateral Movement, fieldbus edge=Modify Bus Message, terminal=Affect Vehicle Function. The trailing ''realism:'' tag weights the path by real-world evidence: it names the documented Auto-ISAC ATM campaigns (ATM-Pxxxx) that exercised the path''s techniques. ''corroborated'' = a single real attack chained 2+ of these techniques; ''partially-corroborated'' = individual techniques are attested but not chained in one campaign; ''theoretical'' = no campaign evidence (informational, does not change severity). The ''entry:'' tag grades the FOOTHOLD only, kept separate from chain realism: ''demonstrated foothold'' names post-2023 public exploits (Pwn2Own Automotive 2024/2025, Kia/Subaru telematics) that popped that exposed interface -- none of which pivoted to a bus/safety function (docs/research/06), so it never raises realism or severity; its one effect is that the entry node''s own firmware-hardening is not credited as a likelihood discount on a demonstrably-poppable interface.'
+    description: 'An internet-exposed OR physically-accessible (OBD-II / debug port / removable media) asset can reach a safety-critical ECU across one or more intermediate nodes/buses. Physical-access entries are scored one likelihood bucket below an equivalent remote entry. Each risk title carries the per-hop technique chain: the ''ATT&CK:'' and ''ATM:'' arrows are aligned hop-by-hop with the path''s ''->'' node chain (one entry per node, ''/'' separates co-occurring techniques on a hop, ''-'' means that hop matched no mapping rule). ATT&CK IDs are MITRE ATT&CK v19.1 (ICS); ATM IDs are Auto-ISAC ATM technique IDs. Roles: entry=Initial Access, gateway/zone=Lateral Movement, fieldbus edge=Modify Bus Message, terminal=Affect Vehicle Function. The trailing ''realism:'' tag weights the path by real-world evidence: it names the documented Auto-ISAC ATM campaigns (ATM-Pxxxx) that exercised the path''s techniques. ''corroborated'' = a single real attack chained 2+ of these techniques; ''partially-corroborated'' = individual techniques are attested but not chained in one campaign; ''theoretical'' = no campaign evidence (informational, does not change severity). The ''entry:'' tag grades the FOOTHOLD only, kept separate from chain realism: ''demonstrated foothold'' names post-2023 public exploits (Pwn2Own Automotive 2024/2025, Kia/Subaru telematics) that popped that exposed interface -- none of which pivoted to a bus/safety function (docs/research/06), so it never raises realism or severity; its one effect is that the entry node''s own firmware-hardening is not credited as a likelihood discount on a demonstrably-poppable interface.'
     impact: Remote attacker can inject control messages affecting vehicle safety functions (steering, braking, transmission).
     asvs: V1 - Architecture, Design and Threat Modeling
     cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Attack_Surface_Analysis_Cheat_Sheet.html
@@ -10,8 +10,8 @@ individual_risk_categories:
     check: Is every path from an external interface to a safety ECU broken by an authenticated, filtering boundary?
     function: architecture
     stride: elevation-of-privilege
-    detection_logic: Graph reachability from internet-exposed in-scope assets to assets tagged safety-critical.
-    risk_assessment: Severity from path length, weakest hop auth, and target integrity rating.
+    detection_logic: Graph reachability from internet-exposed OR physical-entry (OBD-II/debug/removable-media) in-scope assets to assets tagged safety-critical.
+    risk_assessment: Severity from path length, weakest hop auth, and target integrity rating; physical-access entries start one likelihood bucket lower than remote.
     false_positives: Paths broken by controls not modelled as links (e.g. physical air-gap) may be false positives.
     model_failure_possible_reason: false
     cwe: 923
@@ -75,6 +75,70 @@ individual_risk_categories:
       ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit [2h, 3 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (1/3 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: none matched'
       : severity: critical
         exploitation_likelihood: very-likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - vcu
+        most_relevant_technical_asset: vcu
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> ADAS AD Compute [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - adas-compute
+        most_relevant_technical_asset: adas-compute
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Front Zone Controller -> Airbag Control Module [3h, 3 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - airbag-ecu
+        most_relevant_technical_asset: airbag-ecu
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [4h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - bms
+        most_relevant_technical_asset: bms
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Chassis Zone Controller -> Brake ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - brake-ecu
+        most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - inverter
+        most_relevant_technical_asset: inverter
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Chassis Zone Controller -> Steering ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - steering-ecu
+        most_relevant_technical_asset: steering-ecu
+      ? '<b>Attack path</b> Debug Port -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
         exploitation_impact: very-high
         data_breach_probability: possible
         data_breach_technical_assets:
@@ -203,6 +267,70 @@ individual_risk_categories:
       ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - vcu
+        most_relevant_technical_asset: vcu
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> ADAS AD Compute [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - adas-compute
+        most_relevant_technical_asset: adas-compute
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Front Zone Controller -> Airbag Control Module [3h, 3 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - airbag-ecu
+        most_relevant_technical_asset: airbag-ecu
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [4h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - bms
+        most_relevant_technical_asset: bms
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Chassis Zone Controller -> Brake ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - brake-ecu
+        most_relevant_technical_asset: brake-ecu
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - inverter
+        most_relevant_technical_asset: inverter
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Chassis Zone Controller -> Steering ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - steering-ecu
+        most_relevant_technical_asset: steering-ecu
+      ? '<b>Attack path</b> OBD-II Port -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0010 -> ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0083, ATM-P0006, ATM-P0016) | entry: physical access required (OBD-II / debug / removable media); scored one bucket below a remote entry | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      : severity: elevated
+        exploitation_likelihood: unlikely
         exploitation_impact: very-high
         data_breach_probability: possible
         data_breach_technical_assets:
