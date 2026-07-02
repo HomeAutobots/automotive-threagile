@@ -347,19 +347,23 @@ def test_graph_data_held_unions_processed_and_stored():
     assert g.nodes["n"]["data_held"] == {"a", "b"}
 
 
-def _keytheft_model(onward_auth):
-    """entry(internet) -> mid(holds crypto-material) -> brake; the mid->brake
-    link auth varies so we can test the 'authenticated onward link' condition."""
-    return {"technical_assets": {
-        "Entry": _asset("entry", tags=["telematics", "connectivity"],
-                        internet=True, integrity="important"),
-        "Mid": _asset("mid", tags=["gateway"], integrity="critical",
-                      data_processed=["crypto-material"],
-                      links={"up": _link("entry")}),
-        "Brake": _asset("brake-ecu", tags=["ecu", "safety-critical"],
-                        integrity="mission-critical",
-                        links={"cmd": _link("mid", auth=onward_auth, tags=["can-fd"])}),
-    }}
+def _keytheft_model(onward_auth, key_da_id="crypto-material"):
+    """entry(internet) -> mid(holds key material) -> brake; the mid->brake link
+    auth varies so we can test the 'authenticated onward link' condition. The key
+    data asset is matched by its `key-material` TAG, not its id -- key_da_id can be
+    any name to prove portability."""
+    return {
+        "data_assets": {"Keys": {"id": key_da_id, "tags": ["key-material"]}},
+        "technical_assets": {
+            "Entry": _asset("entry", tags=["telematics", "connectivity"],
+                            internet=True, integrity="important"),
+            "Mid": _asset("mid", tags=["gateway"], integrity="critical",
+                          data_processed=[key_da_id],
+                          links={"up": _link("entry")}),
+            "Brake": _asset("brake-ecu", tags=["ecu", "safety-critical"],
+                            integrity="mission-critical",
+                            links={"cmd": _link("mid", auth=onward_auth, tags=["can-fd"])}),
+        }}
 
 
 def test_keytheft_tag_emitted_when_onward_link_authenticated():
@@ -374,6 +378,30 @@ def test_keytheft_tag_absent_when_onward_link_unauthenticated():
     hops = apa.tag_path(g, ["entry", "mid", "brake-ecu"], "brake-ecu")
     mid = next(h for h in hops if h["node"] == "mid")
     assert "ATM-T0039" not in mid["atm_ids"]
+
+
+def test_keytheft_matches_key_material_tag_not_a_fixed_id():
+    # Portability: the key-theft hop fires on ANY data asset tagged `key-material`,
+    # regardless of its id -- so an adopter can name it whatever they like.
+    g = apa.build_reachability_graph(
+        _keytheft_model("credentials", key_da_id="my-oem-signing-keys"))
+    assert g.graph["key_material_ids"] == {"my-oem-signing-keys"}
+    hops = apa.tag_path(g, ["entry", "mid", "brake-ecu"], "brake-ecu")
+    mid = next(h for h in hops if h["node"] == "mid")
+    assert "ATM-T0039" in mid["atm_ids"]
+    # an UNtagged data asset of the same id would NOT trigger key-theft
+    g2 = apa.build_reachability_graph({
+        "data_assets": {"D": {"id": "plain", "tags": []}},
+        "technical_assets": {
+            "Entry": _asset("entry", tags=["telematics"], internet=True),
+            "Mid": _asset("mid", tags=["gateway"], data_processed=["plain"],
+                          links={"up": _link("entry")}),
+            "Brake": _asset("brake-ecu", tags=["ecu", "safety-critical"],
+                            links={"cmd": _link("mid", auth="credentials", tags=["can-fd"])}),
+        }})
+    assert g2.graph["key_material_ids"] == set()
+    hops2 = apa.tag_path(g2, ["entry", "mid", "brake-ecu"], "brake-ecu")
+    assert "ATM-T0039" not in next(h for h in hops2 if h["node"] == "mid")["atm_ids"]
 
 
 # ---- node-control adjustment in score_path -----------------------------------

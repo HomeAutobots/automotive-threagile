@@ -142,7 +142,8 @@ TARGET_TECH = (
     "ATM-TA0013",
 )
 
-# Key-theft hop: emitted on a node that HOLDS crypto-material AND must forge
+# Key-theft hop: emitted on a node that HOLDS key material (a data asset tagged
+# `key-material`) AND must forge
 # across an AUTHENTICATED onward link (so stealing keys is a real step). The
 # hsm control defeats it. (Persistence techniques are intentionally NOT emitted
 # yet -- see the spec's "key-theft now, persistence later" decision.)
@@ -406,6 +407,13 @@ def build_reachability_graph(model: dict, directed: bool = False):
     """
     g = nx.DiGraph() if directed else nx.Graph()
     assets = model.get("technical_assets", {}) or {}
+    # Data-asset ids tagged `key-material` -> a node that holds one is a key-theft
+    # target (see tag_path). Matching the reserved TAG rather than a fixed id keeps
+    # this portable across vehicle models (library/data-asset-taxonomy.yaml).
+    g.graph["key_material_ids"] = {
+        d["id"] for d in (model.get("data_assets") or {}).values()
+        if "key-material" in (d.get("tags") or [])
+    }
 
     for title, a in assets.items():
         aid = a["id"]
@@ -537,14 +545,14 @@ def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
         # Target hop: terminal safety-critical node.
         if is_last and ("safety-critical" in ntags):
             add(*TARGET_TECH)
-        # Key-theft hop: node holds crypto-material AND must forge across an
-        # authenticated onward link (so stealing keys is a step). hsm defeats it.
-        # (Abstraction limit: treats any held crypto-material as the key for any
-        # authenticated onward link; over-claims if the node holds keys unrelated
-        # to that link.)
+        # Key-theft hop: node holds a `key-material`-tagged data asset AND must
+        # forge across an authenticated onward link (so stealing keys is a step).
+        # hsm defeats it. (Abstraction limit: treats any held key material as the
+        # key for any authenticated onward link; over-claims if the node holds keys
+        # unrelated to that link.)
         if i < len(path) - 1:
             nxt = path[i + 1]
-            if ("crypto-material" in ndata["data_held"]
+            if ((ndata["data_held"] & g.graph.get("key_material_ids", set()))
                     and g[node][nxt]["auth"] != "none"):
                 add(*KEYTHEFT_TECH)
 
