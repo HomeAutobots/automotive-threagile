@@ -148,9 +148,10 @@ CONTROL_CATALOG = {
     "ids":                      {"effect": "soft", "defeats": {"T0867", "T0866",
                                                                "ATM-T0051", "ATM-T0052"}},
     "sensor-plausibility":      {"effect": "soft", "defeats": {"ATM-T0003", "ATM-T0004"}},
-    # hard -- hsm activates once the key-theft hop is wired into tag_path (next
-    # task); secure-boot/firmware-signing/anti-rollback stay inert until the
-    # analyzer emits persistence techniques (later work).
+    # hard -- hsm is ACTIVE: the key-theft hop (KEYTHEFT_TECH) is emitted in
+    # tag_path, so hsm floors likelihood on paths that must forge across an
+    # authenticated link. secure-boot/firmware-signing/anti-rollback stay inert
+    # until the analyzer emits their techniques (persistence/rollback -- later work).
     "hsm":                      {"effect": "hard", "defeats": {"ATM-T0039", "ATM-T0040", "T1552"}},
     "secure-boot":              {"effect": "hard", "defeats": {"T1542", "T0857"}},
     "firmware-signing":         {"effect": "hard", "defeats": {"T1693", "T0843"}},
