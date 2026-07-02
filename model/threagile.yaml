@@ -33,6 +33,7 @@ tags_available:
   - can-fd
   - lin
   - flexray
+  - sent
   - ethernet
   - some-ip
   - doip
@@ -40,6 +41,7 @@ tags_available:
   - v2x
   - cellular
   - bluetooth
+  - wifi
   - uwb
   - gnss
   - ota
