@@ -40,6 +40,13 @@ import networkx as nx
 # Which tags mark a "crown jewel" we must keep attackers away from.
 CROWN_JEWEL_TAGS = {"safety-critical"}
 
+# Tags that make an IN-SCOPE, non-internet asset an attacker ENTRY point via
+# PHYSICAL access: the OBD-II connector, the JTAG/UART debug port, removable
+# media. Physical access is a precondition, so these seed at one likelihood
+# bucket BELOW a remote (internet) entry (see score_path). Configurable on the
+# CLI via --entry-tags; empty => remote entries only. (R9, docs/research/15.)
+PHYSICAL_ENTRY_TAGS = {"physical", "obd-ii", "removable-media"}
+
 # Weakness ranking for authentication on a hop (lower = weaker = easier pivot).
 AUTH_RANK = {
     "none": 0, "credentials": 1, "session-id": 1, "token": 2,
@@ -447,10 +454,19 @@ def edge_bus_tags(g: nx.Graph, u: str, v: str) -> set:
     return set()
 
 
-def entries(g: nx.Graph) -> list:
-    """In-scope, internet-exposed assets = the remote attacker's footholds."""
+def entries(g: nx.Graph, physical_entry_tags: set = PHYSICAL_ENTRY_TAGS) -> list:
+    """In-scope attacker footholds: internet-exposed (remote) PLUS assets carrying
+    a physical-entry tag (OBD-II / debug port / removable media). Physical access
+    is a real automotive first-class threat, so those surfaces produce paths too."""
     return [n for n, d in g.nodes(data=True)
-            if d["internet"] and not d["out_of_scope"]]
+            if not d["out_of_scope"]
+            and (d["internet"] or (d["tags"] & physical_entry_tags))]
+
+
+def entry_kind(g: nx.Graph, node: str) -> str:
+    """'remote' for an internet-exposed foothold, else 'physical' (requires
+    physical access -- scored one likelihood bucket lower)."""
+    return "remote" if g.nodes[node]["internet"] else "physical"
 
 
 def crown_jewels(g: nx.Graph) -> list:
@@ -497,8 +513,10 @@ def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
 
         is_first = i == 0
         is_last = node == jewel and i == len(path) - 1
-        # Entry hop: first node, internet-exposed.
-        if is_first and ndata["internet"]:
+        # Entry hop: first node, internet-exposed OR a physical-access entry
+        # (OBD-II/debug/removable-media). _entry_tech maps obd-ii/physical to
+        # ATM-T0010 (aftermarket/dealer/diagnostic equipment).
+        if is_first and (ndata["internet"] or (ntags & PHYSICAL_ENTRY_TAGS)):
             t = _entry_tech(ntags)
             if t:
                 add(*t)
@@ -597,13 +615,17 @@ def _realism_str(r: dict, top: int = 3) -> str:
             f"attested; {ids})")
 
 
-def _entry_corroboration_str(ec: dict) -> str:
+def _entry_corroboration_str(ec: dict, entry_kind: str = "remote") -> str:
     """Entry-hop corroboration annotation for the risk title (campaign IDs only).
 
     ``ec`` is the ``entry_corroboration`` dict (or None) from the path's control
     adjustment. Reported SEPARATELY from realism: it grades the entry FOOTHOLD,
-    not the chain (docs/research/06).
+    not the chain (docs/research/06). A physical-access entry is flagged as such
+    (it is scored one likelihood bucket lower; no remote foothold needed).
     """
+    if entry_kind == "physical":
+        return ("entry: physical access required (OBD-II / debug / removable "
+                "media); scored one bucket below a remote entry")
     if not ec:
         return "entry: no public 2024-2025 exploit (prior unchanged)"
     return f"entry: {ec['tier']} foothold ({', '.join(ec['campaigns'])})"
@@ -682,7 +704,8 @@ def node_control_adjustment(g: nx.Graph, path: list, hops_tagged: list) -> dict:
             "entry_corroboration": entry_demo}
 
 
-def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None) -> dict:
+def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None,
+               entry_kind: str = "remote") -> dict:
     hops = len(path) - 1
     worst_auth = weakest_auth_on_path(g, path)
     # Likelihood: unauthenticated hops + short paths raise it.
@@ -692,6 +715,10 @@ def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None) ->
         likelihood = "likely"
     else:
         likelihood = "unlikely"
+    # Physical-access entry (OBD-II/debug/removable-media) is gated on physical
+    # proximity -> one bucket below an equivalent remote path.
+    if entry_kind == "physical":
+        likelihood = _lower(likelihood, 1)
     base_likelihood = likelihood
     # Node hardening controls break the chain: lower (soft) or floor (hard).
     if hops_tagged is None:
@@ -715,11 +742,13 @@ def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None) ->
     }
 
 
-def analyze(g: nx.Graph, cutoff: int) -> dict:
-    srcs, jewels = sorted(entries(g)), sorted(crown_jewels(g))
+def analyze(g: nx.Graph, cutoff: int,
+            physical_entry_tags: set = PHYSICAL_ENTRY_TAGS) -> dict:
+    srcs, jewels = sorted(entries(g, physical_entry_tags)), sorted(crown_jewels(g))
     paths, chokepoint_tally = [], {}
 
     for s in srcs:
+        kind = entry_kind(g, s)
         for j in jewels:
             if s == j or not nx.has_path(g, s, j):
                 continue
@@ -728,11 +757,12 @@ def analyze(g: nx.Graph, cutoff: int) -> dict:
             hops_tagged = tag_path(g, shortest, j)
             paths.append({
                 "entry": s, "jewel": j,
+                "entry_kind": kind,
                 "shortest": shortest,
                 "num_paths": len(all_paths),
                 "hops_tagged": hops_tagged,
                 "realism": path_realism(hops_tagged),
-                **score_path(g, shortest, j, hops_tagged),
+                **score_path(g, shortest, j, hops_tagged, entry_kind=kind),
             })
             # Minimum node cut = fewest nodes whose removal severs s->j.
             # (s and j are excluded from the cut by definition.)
@@ -760,7 +790,7 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                  f"| ATT&CK: {_attack_chain(hops)} "
                  f"| ATM: {_atm_chain(hops)} "
                  f"| {_realism_str(p['realism'])} "
-                 f"| {_entry_corroboration_str(p['control_adjustment']['entry_corroboration'])} "
+                 f"| {_entry_corroboration_str(p['control_adjustment']['entry_corroboration'], p['entry_kind'])} "
                  f"| {_controls_str(p['control_adjustment'])}")
         risks_identified[title] = {
             "severity": p["severity"],
@@ -790,8 +820,11 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
     if risks_identified:
         categories["Multi-Hop Attack Path To Safety-Critical ECU"] = {
             "id": "attack-path-to-safety-critical-ecu",
-            "description": "An internet-exposed asset can reach a safety-critical "
-                           "ECU across one or more intermediate nodes/buses. "
+            "description": "An internet-exposed OR physically-accessible "
+                           "(OBD-II / debug port / removable media) asset can reach "
+                           "a safety-critical ECU across one or more intermediate "
+                           "nodes/buses. Physical-access entries are scored one "
+                           "likelihood bucket below an equivalent remote entry. "
                            "Each risk title carries the per-hop technique chain: "
                            "the 'ATT&CK:' and 'ATM:' arrows are aligned hop-by-hop "
                            "with the path's '->' node chain (one entry per node, "
@@ -829,10 +862,12 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                      "broken by an authenticated, filtering boundary?",
             "function": "architecture",
             "stride": "elevation-of-privilege",
-            "detection_logic": "Graph reachability from internet-exposed in-scope "
-                               "assets to assets tagged safety-critical.",
+            "detection_logic": "Graph reachability from internet-exposed OR "
+                               "physical-entry (OBD-II/debug/removable-media) "
+                               "in-scope assets to assets tagged safety-critical.",
             "risk_assessment": "Severity from path length, weakest hop auth, and "
-                               "target integrity rating.",
+                               "target integrity rating; physical-access entries "
+                               "start one likelihood bucket lower than remote.",
             "false_positives": "Paths broken by controls not modelled as links "
                                "(e.g. physical air-gap) may be false positives.",
             "model_failure_possible_reason": False,
@@ -896,7 +931,7 @@ def path_mitigation_hint(g, path: list, chokepoints: dict) -> str:
 
 
 def print_summary(g, result):
-    print(f"  entries (internet-exposed): "
+    print(f"  entries (remote + physical): "
           f"{[g.nodes[n]['title'] for n in result['entries']]}")
     print(f"  crown jewels (safety-critical): "
           f"{[g.nodes[n]['title'] for n in result['jewels']]}\n")
@@ -929,6 +964,11 @@ def main():
     ap.add_argument("--out", default="attack-paths.yaml")
     ap.add_argument("--cutoff", type=int, default=8)
     ap.add_argument(
+        "--entry-tags", default="physical,obd-ii,removable-media",
+        help="Comma-separated tags that make an in-scope, non-internet asset an "
+             "attacker entry point (physical access: OBD-II/debug/removable media). "
+             "Pass an empty string for remote (internet-exposed) entries only.")
+    ap.add_argument(
         "--directed", action="store_true",
         help="Build a directed reachability graph (DiGraph). Each link gets a "
              "forward AND reverse edge, except diodes (readonly:true or a "
@@ -937,7 +977,8 @@ def main():
 
     g = build_reachability_graph(load_model(args.model), directed=args.directed)
     print(f"Graph: {g.number_of_nodes()} nodes, {g.number_of_edges()} edges")
-    result = analyze(g, args.cutoff)
+    physical_entry_tags = {t.strip() for t in args.entry_tags.split(",") if t.strip()}
+    result = analyze(g, args.cutoff, physical_entry_tags=physical_entry_tags)
     print_summary(g, result)
 
     out = emit_risks(g, result)

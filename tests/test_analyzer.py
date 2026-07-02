@@ -481,6 +481,40 @@ def test_backbone_ethernet_hop_tags_aitm_lateral_sniffing():
     assert {"ATM-T0052", "ATM-T0038"} <= set(hops[1]["atm_ids"])
 
 
+def test_entries_include_physical_and_exclude_out_of_scope():
+    # Physical surfaces (OBD-II / debug) are in-scope entries; a remote asset is
+    # too; an out-of-scope removable-media stub is not. Empty --entry-tags =>
+    # remote entries only. (R9)
+    model = {"technical_assets": {
+        "Remote": _asset("remote", tags=["telematics"], internet=True,
+                         links={"l": _link("gw", tags=["ethernet"])}),
+        "OBD": _asset("obd-port", tags=["obd-ii", "physical"],
+                      links={"l": _link("gw")}),
+        "OOS": _asset("usb", tags=["physical"], out_of_scope=True,
+                      links={"l": _link("gw")}),
+        "GW": _asset("gw", tags=["gateway"], integrity="critical"),
+    }}
+    g = apa.build_reachability_graph(model)
+    ent = set(apa.entries(g))
+    assert {"remote", "obd-port"} <= ent
+    assert "usb" not in ent                       # out_of_scope excluded
+    assert apa.entry_kind(g, "remote") == "remote"
+    assert apa.entry_kind(g, "obd-port") == "physical"
+    assert set(apa.entries(g, physical_entry_tags=set())) == {"remote"}
+
+
+def test_physical_entry_scored_one_bucket_below_remote():
+    # The SAME path scored from a physical entry is exactly one likelihood bucket
+    # below the remote scoring (physical access is a precondition). (R9)
+    g = apa.build_reachability_graph(_control_model([], []))
+    path = ["entry", "gw", "brake-ecu"]
+    ht = apa.tag_path(g, path, "brake-ecu")
+    remote = apa.score_path(g, path, "brake-ecu", ht, entry_kind="remote")
+    physical = apa.score_path(g, path, "brake-ecu", ht, entry_kind="physical")
+    assert apa.LADDER.index(physical["exploitation_likelihood"]) == \
+        apa.LADDER.index(remote["exploitation_likelihood"]) - 1
+
+
 def test_control_with_no_matching_technique_has_no_effect():
     # sensor-plausibility defeats ATM-T0003/4, never emitted on this path.
     s = _score(_control_model([], ["sensor-plausibility"]))
