@@ -145,17 +145,28 @@ CONTROL_CATALOG = {
     "binary-hardening":         {"effect": "soft", "defeats": {"T0883", "T0860", "T0866"}},
     "memory-protection":        {"effect": "soft", "defeats": {"T0866", "T0867"}},
     "attack-surface-reduction": {"effect": "soft", "defeats": {"T0883", "T0860"}},
-    "ids":                      {"effect": "soft", "defeats": {"T0867", "T0866",
-                                                               "ATM-T0051", "ATM-T0052"}},
+    # ids is DETECT-ONLY, so it earns NO success-likelihood credit (empty defeats
+    # => inert). AUTOSAR IdsM/IdsR report events; they do not block or drop (R10,
+    # docs/research/12: 6 primary specs, zero prevent/block language). Stealthy
+    # bus-off evades it outright (WeepingCAN 0% detection; CANnon error patterns
+    # indistinguishable from natural faults -- R11, docs/research/11). Detection is
+    # a separate axis this likelihood model does not score; inline enforcement
+    # (SecOC) is already modeled via link authentication, not here.
+    "ids":                      {"effect": "soft", "defeats": set()},
     "sensor-plausibility":      {"effect": "soft", "defeats": {"ATM-T0003", "ATM-T0004"}},
+    # anti-rollback is SOFT, not a crypto root-of-trust: SUIT's sequence number "is
+    # not a firmware version field" (RFC 9124 4.3.1) and Aktualizr's rollback check
+    # is SQLite-backed and wipeable (R6b, docs/research/20). Inert today (its
+    # techniques are not emitted); soft classification prevents future over-credit
+    # once the rollback class is wired.
+    "anti-rollback":            {"effect": "soft", "defeats": {"T0800", "ATM-T0021", "ATM-T0054"}},
     # hard -- hsm is ACTIVE: the key-theft hop (KEYTHEFT_TECH) is emitted in
     # tag_path, so hsm floors likelihood on paths that must forge across an
-    # authenticated link. secure-boot/firmware-signing/anti-rollback stay inert
-    # until the analyzer emits their techniques (persistence/rollback -- later work).
+    # authenticated link. secure-boot/firmware-signing stay inert until the
+    # analyzer emits their techniques (persistence -- later work).
     "hsm":                      {"effect": "hard", "defeats": {"ATM-T0039", "ATM-T0040", "T1552"}},
     "secure-boot":              {"effect": "hard", "defeats": {"T1542", "T0857"}},
     "firmware-signing":         {"effect": "hard", "defeats": {"T1693", "T0843"}},
-    "anti-rollback":            {"effect": "hard", "defeats": {"T0800", "ATM-T0021", "ATM-T0054"}},
 }
 
 # The full firmware-hardening image (all three present) is what earns -2.
