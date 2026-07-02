@@ -34,6 +34,14 @@ jobs:
           diff <(grep -v '^#' /tmp/demo.yaml) \
                <(grep -v '^#' scripts/examples/jeep-demo.attack-paths.expected.yaml)
           echo "analyzer regression OK"
+      - name: Attack-path drift check (committed model/attack-paths.yaml is current)
+        run: |
+          python3 scripts/attack_path_analyzer.py \
+            model/threagile.yaml --out /tmp/real-paths.yaml
+          diff <(grep -v '^#' model/attack-paths.yaml) \
+               <(grep -v '^#' /tmp/real-paths.yaml) \
+            || { echo "::error::model/attack-paths.yaml is STALE. Regenerate: python3 scripts/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml"; exit 1; }
+          echo "attack-paths.yaml is up to date"
 
   tests:
     name: Pytest (analyzer unit tests)
