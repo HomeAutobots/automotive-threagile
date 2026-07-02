@@ -6,13 +6,13 @@
 #
 # Requires Go and a Threagile SOURCE tree (the harness + YAML script engine are NOT
 # in the released Docker image). Each rule is run against the committed parsed-format
-# fixture (model/custom-risk-rules/test/parsed-model.yaml) and asserted to fire on its
+# fixture (library/custom-risk-rules/test/parsed-model.yaml) and asserted to fire on its
 # intended asset and skip its negative control. The harness returns exit 0 even on
 # errors, so correctness is asserted on its OUTPUT, not the exit code.
 set -uo pipefail
 SRC="${1:-${THREAGILE_SRC:-/tmp/threagile-src}}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
-RULES="$HERE/../model/custom-risk-rules"
+RULES="$HERE/../library/custom-risk-rules"
 
 if [ ! -f "$SRC/cmd/script/main.go" ]; then
   echo "ERROR: Threagile source not found at '$SRC' (clone github.com/Threagile/threagile)." >&2

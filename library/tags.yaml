@@ -1,0 +1,64 @@
+# Canonical tag vocabulary — the library contract.
+#
+# Threagile requires every tag USED on an asset/link/data-asset to be declared in
+# the model's own `tags_available` block. This file is the canonical master list the
+# library ships; `scripts/validate-model.sh` fails the build if a model's
+# `tags_available` drifts from this set. Adopters: copy this list into your model's
+# `tags_available` (or keep it in sync). Grouping mirrors model/threagile.yaml.
+#
+# See library/conventions.md for what each group means and library/README.md for how
+# the library is organised.
+
+tags:
+  - safety-critical
+  - ecu
+  - gateway
+  - zone-controller
+  - connectivity
+  - infotainment
+  - telematics
+  - adas
+  - powertrain
+  - chassis
+  - body
+  - charging
+  - can
+  - can-fd
+  - lin
+  - flexray
+  - sent
+  - ethernet
+  - some-ip
+  - doip
+  - obd-ii
+  - v2x
+  - cellular
+  - bluetooth
+  - wifi
+  - uwb
+  - gnss
+  - ota
+  - iso15118
+  - tls-server-only
+  - tls-mutual
+  - distance-bounding
+  - hsm
+  - removable-media
+  - firmware-signing
+  - external
+  - physical
+  - secure-boot
+  - binary-hardening
+  - memory-protection
+  - attack-surface-reduction
+  - ids
+  - sensor-plausibility
+  - anti-rollback
+  - macsec
+  - someip-tls
+  - gptp-authenticated
+  - secure-ranging
+  - iso15118-20-mutual-tls
+  - fault-injection-resistant
+  - key-material
+  - firmware-image
