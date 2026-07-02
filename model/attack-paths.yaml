@@ -16,7 +16,7 @@ individual_risk_categories:
     model_failure_possible_reason: false
     cwe: 923
     risks_identified:
-      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> ADAS AD Compute [5h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0867/T0866 -> T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> ADAS AD Compute [5h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0830/T0867/T0866 -> T0830/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -40,7 +40,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - bms
         most_relevant_technical_asset: bms
-      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> Brake ECU [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> Brake ECU [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -48,7 +48,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -64,7 +64,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - inverter
         most_relevant_technical_asset: inverter
-      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> Steering ECU [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Charge Port Controller -> Battery Management System -> Vehicle Control Unit -> Front Zone Controller -> Central Gateway -> Chassis Zone Controller -> Steering ECU [6h, 6 path(s), weakest auth none] | ATT&CK: T0883 -> T1692.001/T0849 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-front:memory-protection, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -88,7 +88,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - adas-compute
         most_relevant_technical_asset: adas-compute
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Airbag Control Module [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Airbag Control Module [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -96,7 +96,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - airbag-ecu
         most_relevant_technical_asset: airbag-ecu
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [5h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [5h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -104,7 +104,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - bms
         most_relevant_technical_asset: bms
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Brake ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Brake ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -112,7 +112,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -120,7 +120,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - flexray-actuator
         most_relevant_technical_asset: flexray-actuator
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -128,7 +128,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - inverter
         most_relevant_technical_asset: inverter
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Steering ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Steering ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -136,7 +136,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [4h, 3 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> GNSS Receiver -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [4h, 3 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: gnss-receiver:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -144,7 +144,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - vcu
         most_relevant_technical_asset: vcu
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> ADAS AD Compute [2h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> ADAS AD Compute [2h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T0830/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -152,7 +152,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - adas-compute
         most_relevant_technical_asset: adas-compute
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Airbag Control Module [3h, 5 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Airbag Control Module [3h, 5 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -160,7 +160,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - airbag-ecu
         most_relevant_technical_asset: airbag-ecu
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [4h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [4h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -168,7 +168,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - bms
         most_relevant_technical_asset: bms
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Brake ECU [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Brake ECU [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -176,7 +176,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -184,7 +184,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - flexray-actuator
         most_relevant_technical_asset: flexray-actuator
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 8 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 8 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -192,7 +192,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - inverter
         most_relevant_technical_asset: inverter
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Steering ECU [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Steering ECU [3h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -200,7 +200,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, P2O-AUTO-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: ivi:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -208,7 +208,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - vcu
         most_relevant_technical_asset: vcu
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> ADAS AD Compute [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> ADAS AD Compute [2h, 1 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T0830/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -216,7 +216,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - adas-compute
         most_relevant_technical_asset: adas-compute
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Airbag Control Module [3h, 3 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Airbag Control Module [3h, 3 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -224,7 +224,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - airbag-ecu
         most_relevant_technical_asset: airbag-ecu
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [4h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [4h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -232,7 +232,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - bms
         most_relevant_technical_asset: bms
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> Brake ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> Brake ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -240,7 +240,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -248,7 +248,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - flexray-actuator
         most_relevant_technical_asset: flexray-actuator
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -256,7 +256,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - inverter
         most_relevant_technical_asset: inverter
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> Steering ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Chassis Zone Controller -> Steering ECU [3h, 2 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -264,7 +264,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
+      ? '<b>Attack path</b> Telematics Control Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [3h, 4 path(s), weakest auth none] | ATT&CK: T0883 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: demonstrated foothold (P2O-AUTO-2024, KIA-DEALER-2024, SUBARU-STARLINK-2025) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood); entry-hardening not credited on demonstrated foothold: tcu:attack-surface-reduction/binary-hardening'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -272,7 +272,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - vcu
         most_relevant_technical_asset: vcu
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute [1h, 1 path(s), weakest auth none] | ATT&CK: T0860 -> T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (1/4 techniques attested; ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute [1h, 1 path(s), weakest auth none] | ATT&CK: T0860 -> T0830/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (2/6 techniques attested; ATM-P0038, ATM-P0016, ATM-P0083) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility (-1 likelihood)'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -280,7 +280,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - adas-compute
         most_relevant_technical_asset: adas-compute
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Airbag Control Module [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Airbag Control Module [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -288,7 +288,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - airbag-ecu
         most_relevant_technical_asset: airbag-ecu
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [5h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit -> Battery Management System [5h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -296,7 +296,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - bms
         most_relevant_technical_asset: bms
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Brake ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Brake ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -304,7 +304,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -312,7 +312,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - flexray-actuator
         most_relevant_technical_asset: flexray-actuator
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -320,7 +320,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - inverter
         most_relevant_technical_asset: inverter
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Steering ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Chassis Zone Controller -> Steering ECU [4h, 2 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -328,7 +328,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [4h, 3 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: partially-corroborated (2/6 techniques attested; ATM-P0006, ATM-P0038) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> V2X Module -> ADAS AD Compute -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [4h, 3 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0003/ATM-T0004 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/7 techniques attested; ATM-P0038, ATM-P0006, ATM-P0016) | entry: no public 2024-2025 exploit (prior unchanged) | controls: v2x-module:sensor-plausibility, central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -336,7 +336,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - vcu
         most_relevant_technical_asset: vcu
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> ADAS AD Compute [3h, 3 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> ADAS AD Compute [3h, 3 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection (-1 likelihood)'
       : severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
@@ -344,7 +344,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - adas-compute
         most_relevant_technical_asset: adas-compute
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Airbag Control Module [4h, 5 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Airbag Control Module [4h, 5 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -360,7 +360,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - bms
         most_relevant_technical_asset: bms
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Brake ECU [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Brake ECU [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -368,7 +368,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - brake-ecu
         most_relevant_technical_asset: brake-ecu
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> FlexRay Chassis Actuator [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -376,7 +376,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - flexray-actuator
         most_relevant_technical_asset: flexray-actuator
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 8 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Inverter Motor Control [4h, 8 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -384,7 +384,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - inverter
         most_relevant_technical_asset: inverter
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Steering ECU [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Chassis Zone Controller -> Steering ECU [4h, 4 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T1692.001/T0849/T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-chassis:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -392,7 +392,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - steering-ecu
         most_relevant_technical_asset: steering-ecu
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [4h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T0867/T0866 -> T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0051/ATM-T0052 -> ATM-T0051/ATM-T0052 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Infotainment Head Unit -> Central Gateway -> Front Zone Controller -> Vehicle Control Unit [4h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T0830 -> T0830/T0867/T0866 -> T0830/T0867/T0866 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0052/ATM-T0038 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0052/ATM-T0038/ATM-T0051 -> ATM-T0070/ATM-T0068 | realism: corroborated (3/6 techniques attested; ATM-P0006, ATM-P0083, ATM-P0175) | entry: no public 2024-2025 exploit (prior unchanged) | controls: central-gateway:memory-protection, zone-front:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high

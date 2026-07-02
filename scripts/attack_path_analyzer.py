@@ -63,6 +63,8 @@ IMPACT_W = {"low": 1, "medium": 2, "high": 3, "very-high": 4}
 
 # Bus-link tags that mark an in-vehicle fieldbus hop.
 BUS_TAGS = {"can", "can-fd", "lin", "flexray", "sent"}
+# Backbone-link tags that mark an automotive-Ethernet / SOME-IP service hop.
+ETHERNET_TAGS = {"ethernet", "some-ip"}
 # Node tags that mark a pivot (domain/zonal bridge).
 PIVOT_TAGS = {"gateway", "zone-controller"}
 
@@ -112,6 +114,16 @@ BUS_TECH = (
     ["ATM-T0070"],
     ["Modify Bus Message"],
     "ATM-TA0013",
+)
+
+# Backbone hop (edge into the next node over automotive Ethernet / SOME-IP):
+# service-layer adversary-in-the-middle + sniffing + lateral movement across the
+# switched backbone, distinct from a fieldbus (CAN) bus hop.
+ETHERNET_TECH = (
+    ["T0830"], ["Adversary-in-the-Middle"],
+    ["ATM-T0052", "ATM-T0038"],
+    ["Exploit ECU for Lateral Movement", "Network Sniffing"],
+    "ATM-TA0009",  # Lateral Movement
 )
 
 # Target hop (terminal safety-critical node).
@@ -493,6 +505,9 @@ def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
         # Bus hop: the edge INTO this node is a fieldbus link.
         if i > 0 and edge_bus_tags(g, path[i - 1], node):
             add(*BUS_TECH)
+        # Backbone hop: the edge INTO this node is automotive-Ethernet / SOME-IP.
+        if i > 0 and (g[path[i - 1]][node]["tags"] & ETHERNET_TAGS):
+            add(*ETHERNET_TECH)
         # Pivot hop: intermediate gateway / zone-controller.
         if not is_first and not is_last and (ntags & PIVOT_TAGS):
             add(*PIVOT_TECH)
