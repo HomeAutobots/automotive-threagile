@@ -465,6 +465,22 @@ def test_ids_is_detect_only_and_earns_no_likelihood_credit():
     assert s["control_adjustment"]["soft_buckets"] == 0
 
 
+def test_backbone_ethernet_hop_tags_aitm_lateral_sniffing():
+    # An automotive-Ethernet / SOME-IP edge into a node emits the backbone tech
+    # set: AitM (T0830) + lateral movement (ATM-T0052) + sniffing (ATM-T0038),
+    # distinct from a fieldbus CAN bus hop. Pure enrichment, no severity effect (R3).
+    model = {"technical_assets": {
+        "Entry": _asset("entry", tags=["connectivity"], internet=True,
+                        integrity="important",
+                        links={"eth": _link("gw", tags=["ethernet", "some-ip"])}),
+        "GW": _asset("gw", tags=["gateway"], integrity="critical"),
+    }}
+    g = apa.build_reachability_graph(model)
+    hops = apa.tag_path(g, ["entry", "gw"], "gw")
+    assert "T0830" in hops[1]["attack_ids"]
+    assert {"ATM-T0052", "ATM-T0038"} <= set(hops[1]["atm_ids"])
+
+
 def test_control_with_no_matching_technique_has_no_effect():
     # sensor-plausibility defeats ATM-T0003/4, never emitted on this path.
     s = _score(_control_model([], ["sensor-plausibility"]))
@@ -595,7 +611,8 @@ def test_active_vs_inert_controls_match_emitted_techniques():
     for rule in apa.ENTRY_RULES:
         _, ax_ids, _, atm_ids, _, _ = rule
         emitted |= set(ax_ids) | set(atm_ids)
-    for tup in (apa.PIVOT_TECH, apa.BUS_TECH, apa.TARGET_TECH, apa.KEYTHEFT_TECH):
+    for tup in (apa.PIVOT_TECH, apa.BUS_TECH, apa.TARGET_TECH, apa.KEYTHEFT_TECH,
+                apa.ETHERNET_TECH):
         ax_ids, _, atm_ids, _, _ = tup
         emitted |= set(ax_ids) | set(atm_ids)
 
