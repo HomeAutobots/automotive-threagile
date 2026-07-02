@@ -61,6 +61,16 @@ tags_available:
   - ids
   - sensor-plausibility
   - anti-rollback
+  # Forward-looking protection/posture tags: declared so adopters CAN model these
+  # controls, but not yet consumed by the analyzer's likelihood scoring (they are
+  # link/channel-level, or blocked on a technique the analyzer does not emit yet).
+  # See docs/research 09/14/15/16/17/20/22 and the Phase-2 plan.
+  - macsec                    # R3: automotive-Ethernet MACsec (link-level)
+  - someip-tls                # R3: SOME/IP-TLS (service-layer; stronger than macsec)
+  - gptp-authenticated        # R12: authenticated gPTP time-sync (undeployed)
+  - secure-ranging            # R7: UWB 802.15.4z HRP secure ranging (relay-resistant)
+  - iso15118-20-mutual-tls    # R8: ISO 15118-20 mutual TLS (vs -2 server-only)
+  - fault-injection-resistant # R9: hardware fault-injection countermeasures
 
 data_assets:
 
@@ -334,7 +344,7 @@ technical_assets:
     confidentiality: internal
     integrity: important
     availability: operational
-    justification_cia_rating: Unauthenticated RF; GNSS spoofing defeats localization.
+    justification_cia_rating: Unauthenticated RF; GNSS spoofing defeats localization. ASIL ceiling ~C at positioning-engine level (Trimble ProPoint Go, TUV SUD 2023); receiver-node ASIL unverified (R5b).
     data_assets_processed: [telematics-data]
     communication_links:
       GNSS To ADAS Compute:
@@ -478,12 +488,12 @@ technical_assets:
     confidentiality: internal
     integrity: mission-critical
     availability: mission-critical
-    justification_cia_rating: Routes safety-critical chassis traffic.
+    justification_cia_rating: Routes safety-critical chassis traffic. Uptane partial verification only for constrained secondary ECUs (R6b; Uptane 2.1.0 SHOULD, not SHALL) -- mix-and-match not fully covered.
     data_assets_processed: [ecu-firmware]
     communication_links:
       To Brake ECU:
         target: brake-ecu
-        description: CAN FD to brake-by-wire ECU; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
+        description: CAN FD to brake-by-wire ECU; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality); freshness assumed counter-based (Profile 3) -- a time-based profile (StbM) would depend on gPTP time-sync integrity (R12)
         protocol: binary
         usage: business
         authentication: credentials
@@ -492,7 +502,7 @@ technical_assets:
         data_assets_sent: [safety-control-messages]
       To Steering ECU:
         target: steering-ecu
-        description: CAN FD to steer-by-wire ECU; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality)
+        description: CAN FD to steer-by-wire ECU; SecOC (AES-CMAC + freshness; authenticity/integrity, no confidentiality); freshness assumed counter-based (Profile 3) -- a time-based profile (StbM) would depend on gPTP time-sync integrity (R12)
         protocol: binary
         usage: business
         authentication: credentials
@@ -523,7 +533,7 @@ technical_assets:
     confidentiality: internal
     integrity: critical
     availability: critical
-    justification_cia_rating: Aggregates front-zone sensors/actuators and powertrain leafs.
+    justification_cia_rating: Aggregates front-zone sensors/actuators and powertrain leafs. Uptane partial verification only for constrained secondary ECUs (R6b; Uptane 2.1.0 SHOULD, not SHALL).
     communication_links:
       To VCU:
         target: vcu
@@ -595,7 +605,7 @@ technical_assets:
     confidentiality: internal
     integrity: critical
     availability: critical
-    justification_cia_rating: Aggregates rear-zone body/charging/sensor leafs.
+    justification_cia_rating: Aggregates rear-zone body/charging/sensor leafs. Uptane partial verification only for constrained secondary ECUs (R6b; Uptane 2.1.0 SHOULD, not SHALL).
     communication_links:
       To Body Controller:
         target: body-controller
@@ -747,7 +757,7 @@ technical_assets:
     confidentiality: internal
     integrity: important
     availability: critical
-    justification_cia_rating: Supplies LV rail; loss degrades vehicle electronics.
+    justification_cia_rating: Supplies LV rail; loss degrades vehicle electronics. ASIL unverified (R5b) -- availability-over-integrity asymmetry is plausible but not primary-sourced.
 
   Airbag Control Module:
     id: airbag-ecu
@@ -840,7 +850,7 @@ technical_assets:
     confidentiality: internal
     integrity: important
     availability: important
-    justification_cia_rating: Controls AC charging path; faults affect HV safety.
+    justification_cia_rating: Controls AC charging path; faults affect HV safety. ASIL unverified (R5b) -- no published HARA example located for the on-board charger.
     communication_links:
       OBC To BMS:
         target: bms
@@ -866,7 +876,7 @@ technical_assets:
     confidentiality: internal
     integrity: important
     availability: operational
-    justification_cia_rating: Controls access/comfort; entry path via digital key relay.
+    justification_cia_rating: Controls access/comfort; entry path via digital key relay. ASIL unverified (R5b) -- the common QM-to-ASIL-B assumption for BCM was refuted (no primary source).
     communication_links:
       To Window Seat LIN:
         target: lin-actuators
