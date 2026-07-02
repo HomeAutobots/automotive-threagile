@@ -10,7 +10,7 @@ management_summary_comment: >
   Threat model of a composite (domain + zonal) BEV with SAE L3+ automation, spanning the
   attack surface from connectivity through gateways/zones to the safety and charging
   domains. In-vehicle links are authored in the natural telemetry-up direction; multi-hop
-  attacker reachability is computed by scripts/attack_path_analyzer.py.
+  attacker reachability is computed by library/analyzer/attack_path_analyzer.py.
   SecOC (authenticity/integrity, no confidentiality) is modeled on flagship by-wire/
   propulsion buses only; other safety buses remain unauthenticated by design.
 business_criticality: mission-critical

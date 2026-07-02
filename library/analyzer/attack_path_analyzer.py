@@ -26,7 +26,7 @@ would have found. Everything downstream (entries, crown jewels, per-hop
 technique tagging, scoring, emit) works on either graph type.
 
 Usage:
-    python attack_path_analyzer.py <model.yaml> [--out attack-paths.yaml]
+    python library/analyzer/attack_path_analyzer.py <model.yaml> [--out attack-paths.yaml]
         [--cutoff 8] [--directed]
 """
 

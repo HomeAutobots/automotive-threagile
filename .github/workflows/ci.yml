@@ -29,18 +29,18 @@ jobs:
         run: ./scripts/validate-model.sh
       - name: Attack-path analyzer regression (Jeep demo)
         run: |
-          python3 scripts/attack_path_analyzer.py \
-            scripts/examples/jeep-demo.threagile.yaml --out /tmp/demo.yaml
+          python3 library/analyzer/attack_path_analyzer.py \
+            library/analyzer/examples/jeep-demo.threagile.yaml --out /tmp/demo.yaml
           diff <(grep -v '^#' /tmp/demo.yaml) \
-               <(grep -v '^#' scripts/examples/jeep-demo.attack-paths.expected.yaml)
+               <(grep -v '^#' library/analyzer/examples/jeep-demo.attack-paths.expected.yaml)
           echo "analyzer regression OK"
       - name: Attack-path drift check (committed model/attack-paths.yaml is current)
         run: |
-          python3 scripts/attack_path_analyzer.py \
+          python3 library/analyzer/attack_path_analyzer.py \
             model/threagile.yaml --out /tmp/real-paths.yaml
           diff <(grep -v '^#' model/attack-paths.yaml) \
                <(grep -v '^#' /tmp/real-paths.yaml) \
-            || { echo "::error::model/attack-paths.yaml is STALE. Regenerate: python3 scripts/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml"; exit 1; }
+            || { echo "::error::model/attack-paths.yaml is STALE. Regenerate: python3 library/analyzer/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml"; exit 1; }
           echo "attack-paths.yaml is up to date"
 
   tests:
@@ -67,7 +67,7 @@ jobs:
       - name: Install ruff
         run: pip install ruff
       - name: Lint scripts/ and tests/
-        run: ruff check scripts/ tests/
+        run: ruff check library/analyzer/ scripts/ tests/
 
   threagile:
     name: Threagile analyze + report artifact

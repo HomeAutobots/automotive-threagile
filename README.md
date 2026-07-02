@@ -10,22 +10,30 @@ One model, two analysis passes:
 
 1. **Threagile** runs its built-in risk rules over `model/threagile.yaml` and generates the
    report (`output/`).
-2. **`scripts/attack_path_analyzer.py`** reads the same model, builds an attacker-reachability
-   graph, and finds the multi-hop attack paths and chokepoints from internet/RF-exposed assets
-   to safety-critical actuation — emitted as a Threagile `individual_risk_categories` block so
-   the path findings appear in the same report.
+2. **`library/analyzer/attack_path_analyzer.py`** reads the same model, builds an
+   attacker-reachability graph, and finds the multi-hop attack paths and chokepoints from
+   internet/RF-exposed **and physical** entry points to safety-critical actuation — emitted as a
+   Threagile `individual_risk_categories` block so the path findings appear in the same report.
 
 ## Layout
 
+The repo is a template: **`library/`** is the reusable, vehicle-agnostic engine; **`model/`** is
+this vehicle's instance; **`examples/`** helps you start your own. See
+[`library/README.md`](library/README.md).
+
 | Path | Contents |
 |---|---|
-| `model/threagile.yaml` | The canonical model (single source of truth). |
+| `library/tags.yaml` | Canonical tag vocabulary (validated against the model). |
+| `library/data-asset-taxonomy.yaml` | Reserved data-asset tags (`key-material`, `firmware-image`). |
+| `library/conventions.md` | The modeling contract. |
+| `library/custom-risk-rules/` | Custom Threagile YAML risk rules + test fixture. |
+| `library/analyzer/attack_path_analyzer.py` | Multi-hop attack-path analyzer (Python + networkx). |
+| `library/analyzer/examples/` | Bundled demo model + expected analyzer output (used by CI). |
+| `model/threagile.yaml` | The canonical BEV model (this vehicle's instance). |
 | `model/attack-paths.yaml` | Generated `individual_risk_categories` from the analyzer. |
-| `model/custom-risk-rules/` | Custom Threagile YAML risk rules. |
-| `scripts/attack_path_analyzer.py` | Multi-hop attack-path analyzer (Python + networkx). |
+| `examples/starter-skeleton.yaml` | Minimal valid 3-node model to start a new vehicle from. |
 | `scripts/run-threagile.sh` | Wrapper around the Threagile Docker image. |
-| `scripts/validate-model.sh` | Quick model-parse sanity check. |
-| `scripts/examples/` | Bundled demo model + expected analyzer output (used by CI). |
+| `scripts/validate-model.sh` | Model parse + referential-integrity + vocab-drift checks. |
 | `output/` | Generated Threagile artifacts (gitignored). |
 
 ## Prerequisites
@@ -48,29 +56,29 @@ Generate the Threagile report (`report.pdf`, diagrams, `risks.json/xlsx`) into `
 Run the multi-hop attack-path analyzer:
 
 ```bash
-python3 scripts/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml
+python3 library/analyzer/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml
 ```
 
 Sanity-check the analyzer against the bundled demo (this is what CI runs):
 
 ```bash
-python3 scripts/attack_path_analyzer.py scripts/examples/jeep-demo.threagile.yaml --out /tmp/demo.yaml
-diff <(grep -v '^#' /tmp/demo.yaml) <(grep -v '^#' scripts/examples/jeep-demo.attack-paths.expected.yaml) && echo "analyzer OK"
+python3 library/analyzer/attack_path_analyzer.py library/analyzer/examples/jeep-demo.threagile.yaml --out /tmp/demo.yaml
+diff <(grep -v '^#' /tmp/demo.yaml) <(grep -v '^#' library/analyzer/examples/jeep-demo.attack-paths.expected.yaml) && echo "analyzer OK"
 ```
 
 ## Sample findings
 
 Generated from the current model by `./scripts/run-threagile.sh` and
-`scripts/attack_path_analyzer.py` (reproducible — your numbers will track the model).
+`library/analyzer/attack_path_analyzer.py` (reproducible — your numbers will track the model).
 
-- **Threagile report:** **231 risks** across 20 categories — **25 critical, 29 high, 39
-  elevated, 67 medium, 71 low** — from Threagile's built-in rules plus the merged multi-hop
-  findings below. (The custom rules in `model/custom-risk-rules/` are validated separately via
-  the `cmd/script` harness; upstream auto-loading is unconfirmed, so they are not part of this
-  count.)
-- **Multi-hop attack paths:** 6 internet/RF-exposed entry assets (TCU, IVI, V2X, Wi-Fi/BT,
-  GNSS, charge port) reach 8 safety-critical crown jewels (brake, steer, VCU, inverter, BMS,
-  airbag, ADAS compute, FlexRay actuator) — **48 attack-path risks + 6 chokepoint risks**.
+- **Threagile report:** built-in rules plus the merged multi-hop findings below. (The custom
+  rules in `library/custom-risk-rules/` are validated separately via the `cmd/script` harness;
+  upstream auto-loading is unconfirmed, so they are not part of the built-in count. Run
+  `./scripts/run-threagile.sh` for the current totals.)
+- **Multi-hop attack paths:** 8 entry points — 6 internet/RF-exposed (TCU, IVI, V2X, Wi-Fi/BT,
+  GNSS, charge port) plus 2 physical (OBD-II port, debug port, scored one bucket below remote) —
+  reach 8 safety-critical crown jewels (brake, steer, VCU, inverter, BMS, airbag, ADAS compute,
+  FlexRay actuator) — **64 attack-path risks + 6 chokepoint risks**.
 - **Top chokepoints (min node cut)** — best places to add an authenticated, filtering boundary:
 
   | Node | Jewel paths it gates |
@@ -98,7 +106,7 @@ Generated from the current model by `./scripts/run-threagile.sh` and
 ## Modeling conventions
 
 The rules and analyzer are **tag-driven**, so they apply to any model that follows these
-conventions — see [CONVENTIONS.md](CONVENTIONS.md) for the full tag vocabulary, per-rule
+conventions — see [library/conventions.md](library/conventions.md) for the full tag vocabulary, per-rule
 triggers, and run commands.
 
 - **Default insecure.** Every raw CAN / CAN FD / LIN / FlexRay / SENT link, and any Ethernet

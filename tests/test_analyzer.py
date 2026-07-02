@@ -1,4 +1,4 @@
-"""Unit tests for scripts/attack_path_analyzer.py.
+"""Unit tests for library/analyzer/attack_path_analyzer.py.
 
 All models are small INLINE dicts (no external files, no frameworks/ tree).
 Tests are deterministic and import the analyzer as a module.
@@ -9,10 +9,10 @@ import pathlib
 
 import networkx as nx
 
-# ---- Import the analyzer as a module by path (it lives in scripts/) ----------
+# ---- Import the analyzer as a module by path (it lives in library/analyzer/) --
 _ANALYZER = (
     pathlib.Path(__file__).resolve().parent.parent
-    / "scripts" / "attack_path_analyzer.py"
+    / "library" / "analyzer" / "attack_path_analyzer.py"
 )
 _spec = importlib.util.spec_from_file_location("attack_path_analyzer", _ANALYZER)
 apa = importlib.util.module_from_spec(_spec)

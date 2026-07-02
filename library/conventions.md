@@ -8,7 +8,8 @@ any Threagile model that follows these conventions, not just the bundled one.
 ## Tag vocabulary
 
 Every tag used on an asset or communication link must be declared in the model's top-level
-`tags_available:` block. The controlled vocabulary:
+`tags_available:` block. The **canonical, complete list is `library/tags.yaml`** (the build
+fails if the model drifts from it); the groups below are an illustrative summary:
 
 | Group | Tags |
 |---|---|
@@ -52,7 +53,7 @@ Every tag used on an asset or communication link must be declared in the model's
   time-of-flight) is enforced. Such a link without it is what `relay-vulnerable-passive-entry`
   flags — crypto authentication alone does not stop a relay, so the rule ignores `authentication`.
 - **Key storage.** Mark assets that hold long-term keys/credentials by listing the
-  `crypto-material` data asset in their `data_assets_processed`/`data_assets_stored`, and add
+  data asset tagged `key-material` in `data_assets_processed`/`data_assets_stored`, and add
   the `hsm` tag only when that material is held in hardware-backed storage (HSM/SHE/secure
   element). A key-holder without `hsm` is what `unprotected-key-storage` flags.
 - **Removable media.** Tag a USB/SD host-interface link `removable-media`. Model it
@@ -60,7 +61,7 @@ Every tag used on an asset or communication link must be declared in the model's
   which case use a real authentication value); an unvalidated one is what
   `removable-media-ingress` flags.
 - **Firmware signing.** Mark assets that receive/install firmware by listing the
-  `ecu-firmware` data asset in their `data_assets_processed`/`data_assets_stored`, and add the
+  data asset tagged `firmware-image` in `data_assets_processed`/`data_assets_stored`, and add the
   `firmware-signing` tag only when the asset verifies signed images on-device (Uptane-style
   full/partial verification). A firmware-handler without it is what `unverified-firmware-update`
   flags — transport security (TLS) does not substitute for on-device image verification.
@@ -68,7 +69,7 @@ Every tag used on an asset or communication link must be declared in the model's
 ## How each custom rule keys on the model
 
 Tag your model per the above and these rules apply automatically (in
-`model/custom-risk-rules/`):
+`library/custom-risk-rules/`):
 
 | Rule | Fires when… |
 |---|---|
@@ -85,9 +86,9 @@ Tag your model per the above and these rules apply automatically (in
 | `unauthenticated-someip-service-link` | a `some-ip`-tagged service link has `authentication: none` (spoofable SOME/IP-SD / RPC) |
 | `safety-function-without-redundancy` | a `safety-critical`-tagged asset is not modeled `redundant: true` (single-point DoS exposure) |
 | `relay-vulnerable-passive-entry` | a `uwb`/`bluetooth` link to a `body`-tagged target lacks the `distance-bounding` tag (relay attack) |
-| `unprotected-key-storage` | an asset holding the `crypto-material` data asset lacks the `hsm` tag (keys not in hardware-backed storage) |
+| `unprotected-key-storage` | an asset holding a data asset tagged `key-material` lacks the `hsm` tag (keys not in hardware-backed storage) |
 | `removable-media-ingress` | a `removable-media` (USB/SD) link has `authentication: none` (content not signed/validated) |
-| `unverified-firmware-update` | an asset holding the `ecu-firmware` data asset lacks the `firmware-signing` tag (no on-device image verification) |
+| `unverified-firmware-update` | an asset holding a data asset tagged `firmware-image` lacks the `firmware-signing` tag (no on-device image verification) |
 
 ## Running it
 
@@ -96,7 +97,7 @@ Tag your model per the above and these rules apply automatically (in
 ./scripts/run-threagile.sh
 
 # Multi-hop attack-path analyzer (paths + chokepoints + per-hop ATM/ATT&CK tags)
-python3 scripts/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml
+python3 library/analyzer/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml
 #   --directed   honor true unidirectional links (readonly:true or a `diode` tag)
 
 # Validate the model parses (strict: rejects duplicate keys, like Threagile's parser)

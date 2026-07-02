@@ -3,7 +3,7 @@
 # Usage: scripts/run-threagile.sh [model.yaml] [output_dir]
 #
 # Multi-hop merge: if the default model is used and model/attack-paths.yaml exists
-# (produced by scripts/attack_path_analyzer.py), this concatenates the model with that
+# (produced by library/analyzer/attack_path_analyzer.py), this concatenates the model with that
 # file into a combined model so the analyzer's individual_risk_categories (attack paths +
 # chokepoints) appear in the same report. The analyzer output only adds a top-level
 # `individual_risk_categories:` block that the base model lacks, so concatenation is valid

@@ -1,0 +1,190 @@
+threagile_version: 1.0.0
+title: Starter Skeleton (minimal reusable-library vehicle model)
+date: 2026-07-02
+author:
+  name: your-name-here
+  homepage: example.com
+
+management_summary_comment: >
+  Minimal 3-node starting point for modeling YOUR vehicle with the reusable library.
+  Grow it: add ECUs (iot-device), gateways/zones (gateway), buses (tag the links),
+  external interfaces (internet:true or physical/obd-ii tags), and trust boundaries.
+  Then: scripts/validate-model.sh examples/starter-skeleton.yaml, and
+  python3 library/analyzer/attack_path_analyzer.py examples/starter-skeleton.yaml --out /tmp/paths.yaml
+business_criticality: mission-critical
+
+# Copied verbatim from library/tags.yaml (the canonical vocabulary).
+tags_available:
+  - safety-critical
+  - ecu
+  - gateway
+  - zone-controller
+  - connectivity
+  - infotainment
+  - telematics
+  - adas
+  - powertrain
+  - chassis
+  - body
+  - charging
+  - can
+  - can-fd
+  - lin
+  - flexray
+  - sent
+  - ethernet
+  - some-ip
+  - doip
+  - obd-ii
+  - v2x
+  - cellular
+  - bluetooth
+  - wifi
+  - uwb
+  - gnss
+  - ota
+  - iso15118
+  - tls-server-only
+  - tls-mutual
+  - distance-bounding
+  - hsm
+  - removable-media
+  - firmware-signing
+  - external
+  - physical
+  - secure-boot
+  - binary-hardening
+  - memory-protection
+  - attack-surface-reduction
+  - ids
+  - sensor-plausibility
+  - anti-rollback
+  - macsec
+  - someip-tls
+  - gptp-authenticated
+  - secure-ranging
+  - iso15118-20-mutual-tls
+  - fault-injection-resistant
+  - key-material
+  - firmware-image
+
+data_assets:
+  Safety Control Messages:
+    id: safety-control-messages
+    description: Brake/steer/propulsion command frames
+    usage: business
+    quantity: many
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Spoof/withhold = loss of vehicle control.
+  Crypto Material:
+    id: crypto-material
+    description: Signing keys / certs
+    usage: devops
+    tags: [key-material]        # reserved tag -> unprotected-key-storage rule + key-theft hop
+    quantity: few
+    confidentiality: strictly-confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Key compromise breaks downstream trust.
+  ECU Firmware:
+    id: ecu-firmware
+    description: OTA / firmware images
+    usage: devops
+    tags: [firmware-image]      # reserved tag -> unverified-firmware-update rule
+    quantity: few
+    confidentiality: confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Unverified images allow malicious code install.
+
+technical_assets:
+  Telematics Control Unit:
+    id: tcu
+    description: Cellular modem / OTA client (remote entry point)
+    type: process
+    usage: business
+    size: application
+    technology: gateway
+    tags: [connectivity, telematics, cellular, ota, external]   # internet:true => remote entry
+    internet: true
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: restricted
+    integrity: important
+    availability: important
+    justification_cia_rating: Internet-exposed; primary remote initial-access asset.
+    data_assets_processed: [ecu-firmware, crypto-material]
+    communication_links:
+      To Central Gateway:
+        target: central-gateway
+        description: TCU to central gateway over automotive Ethernet
+        protocol: https
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [ethernet, some-ip]
+
+  Central Gateway:
+    id: central-gateway
+    description: Central gateway bridging connectivity and safety domains
+    type: process
+    usage: business
+    size: component
+    technology: gateway
+    tags: [gateway, secure-boot, memory-protection]   # a hardened pivot
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Enforcement chokepoint between domains.
+    communication_links:
+      To Brake ECU:
+        target: brake-ecu
+        description: CAN FD to brake-by-wire ECU (unauthenticated by default)
+        protocol: binary
+        usage: business
+        authentication: none
+        authorization: none
+        tags: [can-fd]
+        data_assets_sent: [safety-control-messages]
+
+  Brake ECU:
+    id: brake-ecu
+    description: Brake-by-wire / ESC / ABS (ASIL D)
+    type: process
+    usage: business
+    size: component
+    technology: iot-device
+    tags: [ecu, safety-critical, chassis, secure-boot]   # crown jewel (path target)
+    internet: false
+    machine: physical
+    encryption: none
+    owner: OEM
+    confidentiality: internal
+    integrity: mission-critical
+    availability: mission-critical
+    justification_cia_rating: Safety-critical actuator; ASIL-D.
+    data_assets_processed: [safety-control-messages]
+
+trust_boundaries:
+  Connectivity Domain:
+    id: connectivity-domain
+    description: External-facing connectivity ECUs
+    type: network-virtual-lan
+    technical_assets_inside: [tcu]
+  Gateway Enforcement:
+    id: gateway-enforcement
+    description: Central gateway / domain bridge
+    type: network-virtual-lan
+    technical_assets_inside: [central-gateway]
+  Safety Domain:
+    id: safety-domain
+    description: Safety-critical actuation ECUs
+    type: network-virtual-lan
+    technical_assets_inside: [brake-ecu]

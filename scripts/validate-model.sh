@@ -45,6 +45,26 @@ da = m.get("data_assets", {}) or {}
 tb = m.get("trust_boundaries", {}) or {}
 tags_avail = set(m.get("tags_available", []) or [])
 
+# Vocabulary-drift guard: the model's tags_available must match the canonical
+# library/tags.yaml (the library contract). Only enforced for the shipped model,
+# and only when the library file is present (adopters may vendor it elsewhere).
+import os
+# library/tags.yaml sits next to model/ at the repo root (model/threagile.yaml ->
+# ../library/tags.yaml). Resolve relative to MODEL so cwd does not matter.
+_lib_tags = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(MODEL))),
+                         "library", "tags.yaml")
+if os.path.basename(MODEL) == "threagile.yaml" and os.path.isfile(_lib_tags):
+    canon = set((yaml.safe_load(open(_lib_tags)) or {}).get("tags", []) or [])
+    missing = canon - tags_avail
+    extra = tags_avail - canon
+    if missing or extra:
+        if missing:
+            print(f"ERROR: tags in library/tags.yaml but NOT in model tags_available: {sorted(missing)}", file=sys.stderr)
+        if extra:
+            print(f"ERROR: tags in model tags_available but NOT in library/tags.yaml: {sorted(extra)}", file=sys.stderr)
+        print("FAIL: model tags_available has drifted from library/tags.yaml", file=sys.stderr)
+        sys.exit(1)
+
 asset_ids = {a["id"] for a in ta.values()}
 data_ids = {d["id"] for d in da.values()}
 
