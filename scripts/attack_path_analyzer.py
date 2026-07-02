@@ -172,6 +172,11 @@ CONTROL_CATALOG = {
     # a separate axis this likelihood model does not score; inline enforcement
     # (SecOC) is already modeled via link authentication, not here.
     "ids":                      {"effect": "soft", "defeats": set()},
+    # sensor-plausibility defeats discrete sensor injection (ATM-T0003/T0004). It
+    # does NOT protect against KF-MSF gradual-drift GNSS spoofing: FusionRipper
+    # (Shen et al., USENIX Sec 2020) exploits the fusion weighting itself, so
+    # cross-modal redundancy is the attack vector, not a defense (R2b,
+    # docs/research/22). Credit here is for discrete-injection detection only.
     "sensor-plausibility":      {"effect": "soft", "defeats": {"ATM-T0003", "ATM-T0004"}},
     # anti-rollback is SOFT, not a crypto root-of-trust: SUIT's sequence number "is
     # not a firmware version field" (RFC 9124 4.3.1) and Aktualizr's rollback check

@@ -16,7 +16,9 @@ description:
   this — it protects the link, not the image. This maps to Auto-ISAC ATM "Supply Chain
   Compromise" (ATM-T0017), "Bypass Code Integrity Protections" (ATM-T0031), and "Disable
   Software Update" (ATM-T0021), and to MITRE ATT&CK for ICS T0857 "System Firmware" /
-  Enterprise T1601 "Modify System Image".
+  Enterprise T1601 "Modify System Image". A production instance of the rollback case is
+  CVE-2023-26245 (Hyundai/Kia/Genesis Gen5W_L IVI), where an OTA version-check bypass in the
+  AppUpgrade binary enabled installing a downgraded (older, vulnerable) firmware image.
 impact:
   If this risk is unmitigated, an attacker who reaches any point in the update pipeline can
   push malicious or downgraded firmware to the ECU, gaining durable, possibly safety-impacting
