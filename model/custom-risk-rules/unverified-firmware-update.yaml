@@ -36,12 +36,13 @@ mitigation:
   checks) and keys held in hardware. Do not rely on transport security alone. Model the asset
   with the `firmware-signing` tag once on-device image verification is actually designed in.
 check:
-  Do all ECUs that receive/install firmware (process the `ecu-firmware` data asset) verify
-  signed images on-device (the `firmware-signing` tag)?
+  Do all ECUs that receive/install firmware (process any data asset tagged `firmware-image`)
+  verify signed images on-device (the `firmware-signing` tag)?
 detection_logic:
-  In-scope technical assets that process or store the `ecu-firmware` data asset and do NOT
-  carry the `firmware-signing` tag. On-device verification is treated as absent unless the
-  asset declares the `firmware-signing` tag.
+  In-scope technical assets that process or store a data asset tagged `firmware-image` and do
+  NOT carry the `firmware-signing` tag. On-device verification is treated as absent unless the
+  asset declares the `firmware-signing` tag. Matching the data-asset TAG (not a fixed id) keeps
+  the rule portable across vehicle models.
 risk_assessment:
   The rating depends on the privilege of the ECU and what it controls; a safety-relevant ECU
   or a zone controller that flashes downstream ECUs without verification is high severity.
@@ -72,14 +73,26 @@ risk:
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
-            # the asset receives/installs firmware
-            - or:
-                - contains:
-                    item: ecu-firmware
-                    in: "{tech_asset.data_assets_processed}"
-                - contains:
-                    item: ecu-firmware
-                    in: "{tech_asset.data_assets_stored}"
+            # the asset receives/installs a data asset tagged `firmware-image`.
+            # Matching the TAG, not a literal data-asset id, keeps the rule portable
+            # across vehicle models (see library/data-asset-taxonomy.yaml). We iterate
+            # the model's data_assets (a map, so items expose fields) and cross-check
+            # membership -- the DSL resolves nested {da.field} in a model path but not
+            # a bare nested {list_item}.
+            - any:
+                in: "{$model.data_assets}"
+                item: da
+                and:
+                  - contains:
+                      item: firmware-image
+                      in: "{da.tags}"
+                  - or:
+                      - contains:
+                          item: "{da.id}"
+                          in: "{tech_asset.data_assets_processed}"
+                      - contains:
+                          item: "{da.id}"
+                          in: "{tech_asset.data_assets_stored}"
             # without on-device signed-image verification (no firmware-signing tag)
             - all:
                 in: "{tech_asset.tags}"

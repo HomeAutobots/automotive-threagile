@@ -30,12 +30,13 @@ mitigation:
   on-chip, enforce key-usage isolation, and bind keys to a tamper-resistant root of trust.
   Model the asset with the `hsm` tag once hardware-backed key storage is actually designed in.
 check:
-  Do all ECUs that hold cryptographic key/credential material (the `crypto-material` data
-  asset) protect it with hardware-backed storage (the `hsm` tag)?
+  Do all ECUs that hold cryptographic key/credential material (any data asset tagged
+  `key-material`) protect it with hardware-backed storage (the `hsm` tag)?
 detection_logic:
-  In-scope technical assets that process or store the `crypto-material` data asset and do NOT
+  In-scope technical assets that process or store a data asset tagged `key-material` and do NOT
   carry the `hsm` tag. Hardware-backed protection is treated as absent unless the asset
-  declares the `hsm` tag.
+  declares the `hsm` tag. Matching the data-asset TAG (not a fixed id) keeps the rule portable
+  across vehicle models.
 risk_assessment:
   The rating depends on what trust the keys anchor and the reachability of the asset.
   Internet/RF-exposed ECUs holding signing or backend-authentication keys without an HSM are
@@ -67,14 +68,27 @@ risk:
       - if:
           and:
             - false: "{tech_asset.out_of_scope}"
-            # the asset holds long-term cryptographic key/credential material
-            - or:
-                - contains:
-                    item: crypto-material
-                    in: "{tech_asset.data_assets_processed}"
-                - contains:
-                    item: crypto-material
-                    in: "{tech_asset.data_assets_stored}"
+            # the asset holds a data asset tagged `key-material` (long-term crypto
+            # material). Matching the TAG, not a literal data-asset id, keeps the rule
+            # portable: an adopter names their key data asset whatever they like and
+            # tags it `key-material` (see library/data-asset-taxonomy.yaml). We iterate
+            # the model's data_assets (a map, so items expose fields) and cross-check
+            # membership -- the DSL resolves nested {da.field} in a model path but not
+            # a bare nested {list_item}.
+            - any:
+                in: "{$model.data_assets}"
+                item: da
+                and:
+                  - contains:
+                      item: key-material
+                      in: "{da.tags}"
+                  - or:
+                      - contains:
+                          item: "{da.id}"
+                          in: "{tech_asset.data_assets_processed}"
+                      - contains:
+                          item: "{da.id}"
+                          in: "{tech_asset.data_assets_stored}"
             # without hardware-backed key storage (no hsm tag)
             - all:
                 in: "{tech_asset.tags}"

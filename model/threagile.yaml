@@ -71,6 +71,12 @@ tags_available:
   - secure-ranging            # R7: UWB 802.15.4z HRP secure ranging (relay-resistant)
   - iso15118-20-mutual-tls    # R8: ISO 15118-20 mutual TLS (vs -2 server-only)
   - fault-injection-resistant # R9: hardware fault-injection countermeasures
+  # Reserved DATA-ASSET tags (the library contract). Custom risk rules match these
+  # tags, NOT fixed data-asset ids, so an adopter can name their data assets freely.
+  # Tag the crypto-key data asset `key-material` and the firmware data asset
+  # `firmware-image`. See library/data-asset-taxonomy.yaml.
+  - key-material
+  - firmware-image
 
 data_assets:
 
@@ -88,6 +94,7 @@ data_assets:
     id: ecu-firmware
     description: OTA payloads and ECU firmware images
     usage: devops
+    tags: [firmware-image]
     quantity: few
     confidentiality: confidential
     integrity: mission-critical
@@ -98,6 +105,7 @@ data_assets:
     id: crypto-material
     description: ECU signing keys, TLS/V2X/ISO15118 certs, SecOC/secure-boot keys
     usage: devops
+    tags: [key-material]
     quantity: few
     confidentiality: strictly-confidential
     integrity: mission-critical

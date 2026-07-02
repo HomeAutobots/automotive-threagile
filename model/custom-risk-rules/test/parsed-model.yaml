@@ -156,6 +156,8 @@ data_assets:
         availability: important
         justification_cia_rating: |
             Key compromise breaks every downstream trust relationship the keys anchor.
+        tags:
+            - key-material
     ecu-firmware:
         id: ecu-firmware
         title: ECU Firmware
@@ -168,6 +170,8 @@ data_assets:
         availability: important
         justification_cia_rating: |
             Firmware integrity is anti-tamper; unverified images allow malicious code install.
+        tags:
+            - firmware-image
 technical_assets:
     brake-actuator-ecu:
         id: brake-actuator-ecu

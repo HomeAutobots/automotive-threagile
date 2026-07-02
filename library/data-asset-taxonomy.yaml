@@ -1,0 +1,40 @@
+# Reserved data-asset tags — the library contract
+#
+# Custom risk rules and the attack-path analyzer identify certain data assets by
+# TAG rather than by a fixed id, so an adopter can name their data assets however
+# they like and still get the rules. Tag your data assets accordingly:
+#
+#   key-material    Long-term cryptographic key/credential material: ECU signing
+#                   keys, TLS/V2X/ISO 15118 private keys & certs, SecOC master keys,
+#                   secure-boot keys. Consumed by:
+#                     - custom rule  unprotected-key-storage  (flags a holder with no `hsm`)
+#                     - analyzer     key-theft hop            (a holder that must forge
+#                                                              across an authenticated link)
+#
+#   firmware-image  Installable firmware / OTA update payloads. Consumed by:
+#                     - custom rule  unverified-firmware-update (flags a receiver with
+#                                                                no `firmware-signing`)
+#
+# Both tags must be declared in the model's `tags_available` (they are, in
+# model/threagile.yaml) and applied to the relevant `data_assets` entries, e.g.:
+#
+#   data_assets:
+#     Crypto Material:
+#       id: crypto-material          # <- id can be anything
+#       tags: [key-material]         # <- the TAG is what the rules match
+#     ECU Firmware:
+#       id: ecu-firmware
+#       tags: [firmware-image]
+#
+# Rationale and decision: docs/decisions/0006-data-asset-tag-rule-contract.md.
+
+reserved_data_asset_tags:
+  - name: key-material
+    description: Long-term cryptographic key/credential material.
+    consumed_by:
+      - unprotected-key-storage (custom rule)
+      - attack-path analyzer key-theft hop
+  - name: firmware-image
+    description: Installable firmware / OTA update payloads.
+    consumed_by:
+      - unverified-firmware-update (custom rule)
