@@ -509,6 +509,12 @@ def test_entry_corroboration_none_for_undemonstrated_interface():
     assert apa.entry_corroboration({"connectivity", "bluetooth", "uwb"}) is None
     assert apa.entry_corroboration({"v2x", "gnss"}) is None
     assert apa.entry_corroboration({"ecu", "gateway"}) is None
+    # charging is excluded (R8): the Pwn2Own EV-charger RCEs popped the off-board
+    # EVSE, not the in-vehicle EVCC -- no vehicle-side charge-controller foothold.
+    assert apa.entry_corroboration({"charging", "ecu"}) is None
+    # the genuine remote footholds still corroborate.
+    assert apa.entry_corroboration({"cellular"})["tier"] == "demonstrated"
+    assert apa.entry_corroboration({"telematics"})["tier"] == "demonstrated"
 
 
 def test_entry_campaign_ids_are_documented():
