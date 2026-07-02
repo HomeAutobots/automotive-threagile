@@ -292,7 +292,11 @@ ENTRY_CORROBORATION = {
     "telematics":   ["P2O-AUTO-2024", "KIA-DEALER-2024",        # modem + backend command
                      "SUBARU-STARLINK-2025"],                   # injection reaching the vehicle
     "infotainment": ["P2O-AUTO-2024", "P2O-AUTO-2025"],         # Tesla IVI; Sony/Alpine/Kenwood
-    "charging":     ["P2O-AUTO-2024", "P2O-AUTO-2025"],         # ChargePoint/JuiceBox/Autel/Tesla WC
+    # NO "charging": the Pwn2Own EV-charger RCEs popped the off-board EVSE
+    # (ChargePoint/JuiceBox/Autel/Tesla Wall Connector), NOT the vehicle-side
+    # charge-port controller (EVCC). Crediting the in-vehicle EVCC entry hop with
+    # those results is a category error -- no vehicle-side EVCC foothold has been
+    # demonstrated (R8, docs/research/14). The EVCC keeps its ordinary entry prior.
 }
 
 
