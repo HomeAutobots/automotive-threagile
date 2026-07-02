@@ -31,6 +31,9 @@ the rules. A different vehicle "just works" as long as its model uses this vocab
 
 ## Using the library for your own vehicle
 
+Full walkthrough (decision guide + step-by-step + checklist): [`examples/README.md`](../examples/README.md).
+In brief:
+
 1. Start from `examples/starter-skeleton.yaml` (a valid 3-node model) or fork
    `model/threagile.yaml`.
 2. Declare `library/tags.yaml`'s tags in your model's `tags_available`.

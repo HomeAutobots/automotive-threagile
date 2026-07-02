@@ -19,7 +19,8 @@ One model, two analysis passes:
 
 The repo is a template: **`library/`** is the reusable, vehicle-agnostic engine; **`model/`** is
 this vehicle's instance; **`examples/`** helps you start your own. See
-[`library/README.md`](library/README.md).
+[`library/README.md`](library/README.md). **To model your own vehicle, follow the step-by-step
+guide in [`examples/README.md`](examples/README.md).**
 
 | Path | Contents |
 |---|---|
