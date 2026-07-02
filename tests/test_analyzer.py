@@ -452,6 +452,19 @@ def test_full_firmware_hardening_set_drops_two_buckets():
     assert s["severity"] == "elevated"
 
 
+def test_ids_is_detect_only_and_earns_no_likelihood_credit():
+    # ids is detect-only (R10/R11): on a gateway pivot hop where it once matched
+    # ATM-T0051/T0052 + T0866/T0867, it now earns NO success-likelihood credit.
+    # Stealthy bus-off (WeepingCAN/CANnon) evades it; detection is not modeled.
+    assert apa.CONTROL_CATALOG["ids"]["defeats"] == set()
+    assert apa.match_hop_controls(
+        {"gateway", "ids"},
+        {"T0866", "T0867", "ATM-T0051", "ATM-T0052"}) == {"hard": [], "soft": []}
+    s = _score(_control_model([], ["ids"]))
+    assert s["exploitation_likelihood"] == "very-likely"   # unchanged from base
+    assert s["control_adjustment"]["soft_buckets"] == 0
+
+
 def test_control_with_no_matching_technique_has_no_effect():
     # sensor-plausibility defeats ATM-T0003/4, never emitted on this path.
     s = _score(_control_model([], ["sensor-plausibility"]))
@@ -581,8 +594,10 @@ def test_active_vs_inert_controls_match_emitted_techniques():
         emitted |= set(ax_ids) | set(atm_ids)
 
     active = {"binary-hardening", "memory-protection", "attack-surface-reduction",
-              "ids", "sensor-plausibility", "hsm"}
-    inert = {"secure-boot", "firmware-signing", "anti-rollback"}
+              "sensor-plausibility", "hsm"}
+    # ids is detect-only (empty defeats); anti-rollback/secure-boot/firmware-signing
+    # defeat techniques the analyzer does not emit yet -- all inert by design.
+    inert = {"ids", "secure-boot", "firmware-signing", "anti-rollback"}
 
     # Every active control must defeat at least one emitted technique.
     for tag in active:
