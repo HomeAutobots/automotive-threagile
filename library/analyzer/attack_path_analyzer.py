@@ -222,10 +222,11 @@ def match_hop_controls(node_tags: set, hop_techs: set) -> dict:
 
     Returns {"hard": [tags], "soft": [tags]} (sorted, deterministic).
     """
-    hard, soft = [], []
+    hard: list[str] = []
+    soft: list[str] = []
     for tag in sorted(node_tags):
         ctl = CONTROL_CATALOG.get(tag)
-        if not ctl or not (ctl["defeats"] & hop_techs):
+        if not ctl or not (set(ctl["defeats"]) & hop_techs):
             continue
         (hard if ctl["effect"] == "hard" else soft).append(tag)
     return {"hard": hard, "soft": soft}
@@ -335,7 +336,7 @@ ENTRY_CORROBORATION = {
 }
 
 
-def entry_corroboration(node_tags: set) -> dict:
+def entry_corroboration(node_tags: set) -> dict | None:
     """Post-2023 demonstrated-foothold evidence for an entry node, or None.
 
     Unions the campaigns of every entry-interface tag on the node. ENTRY-ONLY:
@@ -609,7 +610,7 @@ def path_realism(hops: list) -> dict:
         for t in h["atm_ids"]:
             if t not in techs:
                 techs.append(t)
-    overlap = collections.Counter()
+    overlap: collections.Counter = collections.Counter()
     for t in techs:
         for c in ATM_TECHNIQUE_CAMPAIGNS.get(t, ()):
             overlap[c] += 1
@@ -727,7 +728,7 @@ def node_control_adjustment(g: nx.Graph, path: list, hops_tagged: list) -> dict:
             "entry_corroboration": entry_demo}
 
 
-def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None,
+def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list | None = None,
                entry_kind: str = "remote") -> dict:
     hops = len(path) - 1
     worst_auth = weakest_auth_on_path(g, path)
@@ -768,7 +769,8 @@ def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list = None,
 def analyze(g: nx.Graph, cutoff: int,
             physical_entry_tags: set = PHYSICAL_ENTRY_TAGS) -> dict:
     srcs, jewels = sorted(entries(g, physical_entry_tags)), sorted(crown_jewels(g))
-    paths, chokepoint_tally = [], {}
+    paths: list = []
+    chokepoint_tally: dict = {}
     truncated = 0  # (entry,jewel) pairs whose only path(s) exceed --cutoff hops
 
     for s in srcs:
