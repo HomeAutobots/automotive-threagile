@@ -42,6 +42,12 @@ jobs:
                <(grep -v '^#' /tmp/real-paths.yaml) \
             || { echo "::error::model/attack-paths.yaml is STALE. Regenerate: python3 library/analyzer/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml"; exit 1; }
           echo "attack-paths.yaml is up to date"
+      - name: Starter skeleton stays valid (adopter on-ramp)
+        run: |
+          ./scripts/validate-model.sh examples/starter-skeleton.yaml
+          python3 library/analyzer/attack_path_analyzer.py \
+            examples/starter-skeleton.yaml --out /tmp/skeleton-paths.yaml >/dev/null
+          echo "starter skeleton validates and produces paths"
 
   tests:
     name: Pytest (analyzer unit tests)
