@@ -173,6 +173,46 @@ data_assets:
     availability: operational
     justification_cia_rating: Reveals internals; flashing path if abused.
 
+  HD Map Data:
+    id: hd-map-data
+    description: High-definition map / localization priors for AD planning
+    usage: business
+    quantity: many
+    confidentiality: internal
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Map poisoning misleads planning; integrity is safety-relevant.
+
+  AD Model Data:
+    id: ai-model-data
+    description: Perception/planning neural-network weights and parameters
+    usage: business
+    quantity: few
+    confidentiality: confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Model theft (IP) or poisoning corrupts perception/planning.
+
+  Biometric Templates:
+    id: biometric-template
+    description: Driver-monitoring biometric templates (face/gaze enrolment)
+    usage: business
+    quantity: few
+    confidentiality: strictly-confidential
+    integrity: important
+    availability: operational
+    justification_cia_rating: Irrevocable biometric identifiers; privacy and spoofing impact.
+
+  Event Data Recorder:
+    id: event-data-recorder
+    description: EDR / black-box crash and event logs
+    usage: business
+    quantity: many
+    confidentiality: confidential
+    integrity: mission-critical
+    availability: important
+    justification_cia_rating: Tampering distorts crash liability/forensics; integrity is legal-grade.
+
 technical_assets:
 
   OEM Cloud Backend:
@@ -382,7 +422,7 @@ technical_assets:
     integrity: critical
     availability: critical
     justification_cia_rating: Consolidated compute hosting mixed-criticality services.
-    data_assets_processed: [ecu-firmware, telematics-data, pii-data]
+    data_assets_processed: [ecu-firmware, telematics-data, pii-data, event-data-recorder]
     communication_links:
       HPC To Central Gateway:
         target: central-gateway
@@ -418,7 +458,7 @@ technical_assets:
     integrity: mission-critical
     availability: mission-critical
     justification_cia_rating: Planning/actuation authority; consumes V2X/GNSS/sensor data.
-    data_assets_processed: [adas-fusion-data, v2x-messages, safety-control-messages]
+    data_assets_processed: [adas-fusion-data, v2x-messages, safety-control-messages, hd-map-data, ai-model-data]
     communication_links:
       ADAS To Central Gateway:
         target: central-gateway
@@ -1019,7 +1059,7 @@ technical_assets:
     integrity: important
     availability: operational
     justification_cia_rating: Holds biometric PII; required for L3 handover monitoring.
-    data_assets_processed: [pii-data]
+    data_assets_processed: [pii-data, biometric-template]
     communication_links:
       DMS To ADAS Compute:
         target: adas-compute
