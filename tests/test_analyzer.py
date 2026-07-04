@@ -592,6 +592,29 @@ def test_physical_entry_scored_one_bucket_below_remote():
         apa.LADDER.index(remote["exploitation_likelihood"]) - 1
 
 
+def test_sensor_spoofable_asset_is_a_sensor_entry():
+    # A perception sensor tagged `sensor-spoofable` is a first-class 'sensor' entry
+    # (R2 camera/lidar/radar spoofing): it produces paths, its entry hop gets the
+    # analog-sensor-attack technique (ATM-T0004), and it scores one bucket below a
+    # remote entry (proximity/equipment precondition).
+    model = {"technical_assets": {
+        "Cam": _asset("cam", tags=["adas", "ecu", "sensor-spoofable"],
+                      integrity="mission-critical",
+                      links={"up": _link("adas", tags=["ethernet"])}),
+        "ADAS": _asset("adas", tags=["adas", "safety-critical"],
+                       integrity="mission-critical"),
+    }}
+    g = apa.build_reachability_graph(model)
+    assert "cam" in apa.entries(g)
+    assert apa.entry_kind(g, "cam") == "sensor"
+    ht = apa.tag_path(g, ["cam", "adas"], "adas")
+    assert "ATM-T0004" in ht[0]["atm_ids"]           # analog sensor attack on the entry hop
+    remote = apa.score_path(g, ["cam", "adas"], "adas", ht, entry_kind="remote")
+    sensor = apa.score_path(g, ["cam", "adas"], "adas", ht, entry_kind="sensor")
+    assert apa.LADDER.index(sensor["exploitation_likelihood"]) == \
+        apa.LADDER.index(remote["exploitation_likelihood"]) - 1
+
+
 def test_control_with_no_matching_technique_has_no_effect():
     # sensor-plausibility defeats ATM-T0003/4, never emitted on this path.
     s = _score(_control_model([], ["sensor-plausibility"]))

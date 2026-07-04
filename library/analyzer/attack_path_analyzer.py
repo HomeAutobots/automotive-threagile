@@ -46,6 +46,14 @@ CROWN_JEWEL_TAGS = {"safety-critical"}
 # bucket BELOW a remote (internet) entry (see score_path). Configurable on the
 # CLI via --entry-tags; empty => remote entries only. (R9, docs/research/15.)
 PHYSICAL_ENTRY_TAGS = {"physical", "obd-ii", "removable-media"}
+# SENSOR spoofing: a perception sensor whose physical input an adversary can
+# manipulate (camera phantom/projection, lidar/radar spoofing, adversarial
+# patches -- R2, docs/research/08). No network foothold and no physical touch,
+# but specialised equipment + line-of-sight, so scored like a physical entry
+# (one bucket below remote). The sensor feeds the ADAS crown jewel one hop away.
+SENSOR_ENTRY_TAGS = {"sensor-spoofable"}
+# All non-remote entry markers (physical + sensor). entry_kind distinguishes them.
+NON_REMOTE_ENTRY_TAGS = PHYSICAL_ENTRY_TAGS | SENSOR_ENTRY_TAGS
 
 # Weakness ranking for authentication on a hop (lower = weaker = easier pivot).
 AUTH_RANK = {
@@ -88,7 +96,7 @@ PIVOT_TAGS = {"gateway", "zone-controller"}
 ENTRY_RULES = [
     # (trigger tags, att&ck ids, att&ck names, ATM ids, ATM names, ATM tactic)
     (
-        {"v2x", "gnss"},
+        {"v2x", "gnss", "sensor-spoofable"},
         ["T0860"], ["Wireless Compromise"],
         ["ATM-T0003", "ATM-T0004"],
         ["Manipulate Communications", "Analog Sensor Attacks"],
@@ -478,19 +486,26 @@ def edge_bus_tags(g: nx.Graph, u: str, v: str) -> set:
     return set()
 
 
-def entries(g: nx.Graph, physical_entry_tags: set = PHYSICAL_ENTRY_TAGS) -> list:
+def entries(g: nx.Graph, physical_entry_tags: set = NON_REMOTE_ENTRY_TAGS) -> list:
     """In-scope attacker footholds: internet-exposed (remote) PLUS assets carrying
-    a physical-entry tag (OBD-II / debug port / removable media). Physical access
-    is a real automotive first-class threat, so those surfaces produce paths too."""
+    a non-remote entry tag -- physical (OBD-II / debug / removable media) or sensor
+    (a spoofable perception sensor). Physical access and sensor spoofing are both
+    first-class automotive threats, so those surfaces produce paths too."""
     return [n for n, d in g.nodes(data=True)
             if not d["out_of_scope"]
             and (d["internet"] or (d["tags"] & physical_entry_tags))]
 
 
 def entry_kind(g: nx.Graph, node: str) -> str:
-    """'remote' for an internet-exposed foothold, else 'physical' (requires
-    physical access -- scored one likelihood bucket lower)."""
-    return "remote" if g.nodes[node]["internet"] else "physical"
+    """'remote' (internet-exposed), 'sensor' (spoofable perception sensor), or
+    'physical' (OBD-II/debug/removable-media). Non-remote entries are scored one
+    likelihood bucket lower (access/equipment precondition)."""
+    d = g.nodes[node]
+    if d["internet"]:
+        return "remote"
+    if d["tags"] & SENSOR_ENTRY_TAGS:
+        return "sensor"
+    return "physical"
 
 
 def crown_jewels(g: nx.Graph) -> list:
@@ -537,10 +552,10 @@ def tag_path(g: nx.Graph, path: list, jewel: str) -> list:
 
         is_first = i == 0
         is_last = node == jewel and i == len(path) - 1
-        # Entry hop: first node, internet-exposed OR a physical-access entry
-        # (OBD-II/debug/removable-media). _entry_tech maps obd-ii/physical to
-        # ATM-T0010 (aftermarket/dealer/diagnostic equipment).
-        if is_first and (ndata["internet"] or (ntags & PHYSICAL_ENTRY_TAGS)):
+        # Entry hop: first node, internet-exposed OR a non-remote entry (physical:
+        # OBD-II/debug/removable-media -> ATM-T0010; sensor: sensor-spoofable ->
+        # ATM-T0003/T0004 analog sensor attack, via the same ENTRY_RULE as v2x/gnss).
+        if is_first and (ndata["internet"] or (ntags & NON_REMOTE_ENTRY_TAGS)):
             t = _entry_tech(ntags)
             if t:
                 add(*t)
@@ -650,6 +665,9 @@ def _entry_corroboration_str(ec: dict, entry_kind: str = "remote") -> str:
     if entry_kind == "physical":
         return ("entry: physical access required (OBD-II / debug / removable "
                 "media); scored one bucket below a remote entry")
+    if entry_kind == "sensor":
+        return ("entry: sensor spoofing (adversarial perception input -- camera/"
+                "lidar/radar; demonstrated, R2); scored one bucket below a remote entry")
     if not ec:
         return "entry: no public 2024-2025 exploit (prior unchanged)"
     return f"entry: {ec['tier']} foothold ({', '.join(ec['campaigns'])})"
@@ -739,9 +757,9 @@ def score_path(g: nx.Graph, path: list, jewel: str, hops_tagged: list | None = N
         likelihood = "likely"
     else:
         likelihood = "unlikely"
-    # Physical-access entry (OBD-II/debug/removable-media) is gated on physical
-    # proximity -> one bucket below an equivalent remote path.
-    if entry_kind == "physical":
+    # Non-remote entries (physical access, or sensor spoofing) are gated on a
+    # proximity/equipment precondition -> one bucket below an equivalent remote path.
+    if entry_kind in ("physical", "sensor"):
         likelihood = _lower(likelihood, 1)
     base_likelihood = likelihood
     # Node hardening controls break the chain: lower (soft) or floor (hard).
@@ -1015,10 +1033,11 @@ def main():
     ap.add_argument("--out", default="attack-paths.yaml")
     ap.add_argument("--cutoff", type=int, default=8)
     ap.add_argument(
-        "--entry-tags", default="physical,obd-ii,removable-media",
+        "--entry-tags", default="physical,obd-ii,removable-media,sensor-spoofable",
         help="Comma-separated tags that make an in-scope, non-internet asset an "
-             "attacker entry point (physical access: OBD-II/debug/removable media). "
-             "Pass an empty string for remote (internet-exposed) entries only.")
+             "attacker entry point: physical access (OBD-II/debug/removable media) "
+             "and sensor spoofing (sensor-spoofable). Pass an empty string for "
+             "remote (internet-exposed) entries only.")
     ap.add_argument(
         "--directed", action="store_true",
         help="Build a directed reachability graph (DiGraph). Each link gets a "
