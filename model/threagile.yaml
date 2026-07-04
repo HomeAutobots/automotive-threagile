@@ -54,6 +54,7 @@ tags_available:
   - firmware-signing
   - external
   - physical
+  - sensor-spoofable
   - secure-boot
   - binary-hardening
   - memory-protection
@@ -919,7 +920,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [adas, ecu, sensor-plausibility]
+    tags: [adas, ecu, sensor-plausibility, sensor-spoofable]
     internet: false
     machine: physical
     encryption: none
@@ -937,7 +938,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [adas, ecu, sensor-plausibility]
+    tags: [adas, ecu, sensor-plausibility, sensor-spoofable]
     internet: false
     machine: physical
     encryption: none
@@ -955,7 +956,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [adas, ecu, sensor-plausibility]
+    tags: [adas, ecu, sensor-plausibility, sensor-spoofable]
     internet: false
     machine: physical
     encryption: none
@@ -973,7 +974,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [adas, ecu, sensor-plausibility]
+    tags: [adas, ecu, sensor-plausibility, sensor-spoofable]
     internet: false
     machine: physical
     encryption: none
@@ -991,7 +992,7 @@ technical_assets:
     usage: business
     size: component
     technology: iot-device
-    tags: [adas, ecu, sensor-plausibility]
+    tags: [adas, ecu, sensor-plausibility, sensor-spoofable]
     internet: false
     machine: physical
     encryption: none

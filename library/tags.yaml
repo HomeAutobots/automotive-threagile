@@ -47,6 +47,7 @@ tags:
   - firmware-signing
   - external
   - physical
+  - sensor-spoofable
   - secure-boot
   - binary-hardening
   - memory-protection
