@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Python deps
-        run: pip install pyyaml networkx
+        run: pip install pyyaml "networkx==3.1"   # pinned: min-cut/path enumeration must be reproducible
       - name: Model YAML parses
         run: ./scripts/validate-model.sh
       - name: Attack-path analyzer regression (Jeep demo)
@@ -52,7 +52,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Python deps
-        run: pip install pytest networkx pyyaml
+        run: pip install pytest "networkx==3.1" pyyaml   # pinned for reproducible graph analysis
       - name: Run pytest
         run: pytest -q
 

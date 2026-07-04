@@ -149,7 +149,27 @@ def test_analyze_finds_chokepoint():
     result = apa.analyze(g, cutoff=8)
     # The gateway is the sole node between entry and jewel -> min node cut.
     assert "gw" in result["chokepoints"]
-    assert result["chokepoints"]["gw"] == {"brake-ecu"}
+    assert result["chokepoints"]["gw"]["jewels"] == {"brake-ecu"}
+
+
+def test_chokepoint_severity_tracks_worst_gated_path():
+    # A chokepoint's severity is derived from the worst path it gates, not a fixed
+    # constant. The gateway here gates the (entry -> brake) path, so its emitted
+    # severity must equal that path's severity (Phase 1 fix).
+    g = apa.build_reachability_graph(_three_node_model())
+    result = apa.analyze(g, cutoff=8)
+    gated_sev = result["chokepoints"]["gw"]["worst"]["severity"]
+    path_sev = next(p["severity"] for p in result["paths"] if p["jewel"] == "brake-ecu")
+    assert gated_sev == path_sev
+    out = apa.emit_risks(g, result)
+    choke = out["individual_risk_categories"]["Attack-Path Chokepoint"]["risks_identified"]
+    assert all(v["severity"] == gated_sev for v in choke.values())
+
+
+def test_likelihood_scale_tops_at_very_likely():
+    # `frequent` was dead in path scoring; the scale is 3 buckets now.
+    assert "frequent" not in apa.LIKELIHOOD_W
+    assert apa.LADDER == ["unlikely", "likely", "very-likely"]
 
 
 # ---- technique tagging (tag_path) --------------------------------------------
