@@ -335,7 +335,7 @@ technical_assets:
         usage: business
         authentication: none
         authorization: none
-        tags: [can, uwb]
+        tags: [uwb, bluetooth]
 
   GNSS Receiver:
     id: gnss-receiver
@@ -1275,6 +1275,6 @@ trust_boundaries:
 
   Consolidated HPC Execution:
     id: hpc-execution
-    description: Hypervisor partitions inside consolidated HPCs (IVI QM vs ADAS ASIL D)
+    description: Execution environment of the central compute (hypervisor separating QM/ASIL-D partitions). IVI and ADAS are modeled as distinct domain-controller assets in their network domains, not nested here.
     type: execution-environment
     technical_assets_inside: [central-compute]

@@ -52,8 +52,17 @@ AUTH_RANK = {
     "none": 0, "credentials": 1, "session-id": 1, "token": 2,
     "externalized": 2, "client-certificate": 3, "two-factor": 4,
 }
-LIKELIHOOD_W = {"unlikely": 1, "likely": 2, "very-likely": 3, "frequent": 4}
+# Path likelihood tops out at very-likely: score_path never emits `frequent`, so it
+# is omitted here rather than left as a dead top bucket. (A future path-breadth
+# escalation could reintroduce a 4th bucket -- see IMPROVEMENTS.md Phase 4.)
+LIKELIHOOD_W = {"unlikely": 1, "likely": 2, "very-likely": 3}
 IMPACT_W = {"low": 1, "medium": 2, "high": 3, "very-high": 4}
+# Ordering for taking the max severity across a set of paths (chokepoints).
+SEVERITY_ORDER = ["low", "medium", "elevated", "high", "critical"]
+
+
+def _sev_rank(severity: str) -> int:
+    return SEVERITY_ORDER.index(severity)
 
 # ---- Per-hop technique tagging (SELF-CONTAINED) -----------------------------
 # These are public taxonomy IDs hand-curated from frameworks/atm/{tactics,
@@ -198,7 +207,8 @@ CONTROL_CATALOG = {
 FIRMWARE_HARDENING_SET = {"binary-hardening", "memory-protection", "attack-surface-reduction"}
 
 # Likelihood ladder, weakest first; "lowering" steps toward index 0 (the floor).
-LADDER = ["unlikely", "likely", "very-likely", "frequent"]
+# Tops out at very-likely (see LIKELIHOOD_W) -- score_path never starts above it.
+LADDER = ["unlikely", "likely", "very-likely"]
 
 
 def _lower(likelihood: str, buckets: int) -> str:
@@ -759,6 +769,7 @@ def analyze(g: nx.Graph, cutoff: int,
             physical_entry_tags: set = PHYSICAL_ENTRY_TAGS) -> dict:
     srcs, jewels = sorted(entries(g, physical_entry_tags)), sorted(crown_jewels(g))
     paths, chokepoint_tally = [], {}
+    truncated = 0  # (entry,jewel) pairs whose only path(s) exceed --cutoff hops
 
     for s in srcs:
         kind = entry_kind(g, s)
@@ -767,7 +778,12 @@ def analyze(g: nx.Graph, cutoff: int,
                 continue
             shortest = nx.shortest_path(g, s, j)
             all_paths = list(nx.all_simple_paths(g, s, j, cutoff=cutoff))
+            if not all_paths:
+                # a path exists (has_path) but every one is longer than cutoff:
+                # num_paths would read 0 despite reachability -- flag it.
+                truncated += 1
             hops_tagged = tag_path(g, shortest, j)
+            pscore = score_path(g, shortest, j, hops_tagged, entry_kind=kind)
             paths.append({
                 "entry": s, "jewel": j,
                 "entry_kind": kind,
@@ -775,18 +791,24 @@ def analyze(g: nx.Graph, cutoff: int,
                 "num_paths": len(all_paths),
                 "hops_tagged": hops_tagged,
                 "realism": path_realism(hops_tagged),
-                **score_path(g, shortest, j, hops_tagged, entry_kind=kind),
+                **pscore,
             })
             # Minimum node cut = fewest nodes whose removal severs s->j.
-            # (s and j are excluded from the cut by definition.)
+            # (s and j are excluded from the cut by definition.) A chokepoint's
+            # severity is the WORST severity among the paths it gates (not a fixed
+            # constant), so it can't over- or under-state the risk it funnels.
             try:
                 for node in nx.minimum_node_cut(g, s, j):
-                    chokepoint_tally.setdefault(node, set()).add(j)
+                    rec = chokepoint_tally.setdefault(node, {"jewels": set(), "worst": None})
+                    rec["jewels"].add(j)
+                    if rec["worst"] is None or _sev_rank(pscore["severity"]) > _sev_rank(rec["worst"]["severity"]):
+                        rec["worst"] = pscore
             except nx.NetworkXError:
                 pass  # s,j adjacent -> no internal chokepoint
 
     return {"paths": paths, "chokepoints": chokepoint_tally,
-            "entries": srcs, "jewels": jewels}
+            "entries": srcs, "jewels": jewels,
+            "cutoff": cutoff, "truncated_pairs": truncated}
 
 
 # ---- Emit individual_risk_categories ---------------------------------------
@@ -815,15 +837,20 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
         }
 
     choke = {}
-    for node, jewels in sorted(result["chokepoints"].items(),
-                               key=lambda kv: -len(kv[1])):
+    # Sort by paths-gated (desc) then node id (asc) so ties are deterministic
+    # regardless of the min-cut set's iteration order.
+    for node, rec in sorted(result["chokepoints"].items(),
+                            key=lambda kv: (-len(kv[1]["jewels"]), kv[0])):
+        jewels, worst = rec["jewels"], rec["worst"]
         nt = g.nodes[node]["title"]
         title = (f"<b>Chokepoint</b> {nt} gates {len(jewels)} "
-                 f"safety-critical path(s)")
+                 f"safety-critical path(s) (worst gated severity: {worst['severity']})")
         choke[title] = {
-            "severity": "critical" if len(jewels) >= 2 else "high",
-            "exploitation_likelihood": "likely",
-            "exploitation_impact": "very-high",
+            # A chokepoint is as severe as the worst path it gates -- not a fixed
+            # constant. Breadth (how many paths) drives sort order + the title, not severity.
+            "severity": worst["severity"],
+            "exploitation_likelihood": worst["exploitation_likelihood"],
+            "exploitation_impact": worst["exploitation_impact"],
             "data_breach_probability": "possible",
             "data_breach_technical_assets": sorted(jewels),
             "most_relevant_technical_asset": node,
@@ -875,9 +902,13 @@ def emit_risks(g: nx.Graph, result: dict) -> dict:
                      "broken by an authenticated, filtering boundary?",
             "function": "architecture",
             "stride": "elevation-of-privilege",
-            "detection_logic": "Graph reachability from internet-exposed OR "
-                               "physical-entry (OBD-II/debug/removable-media) "
-                               "in-scope assets to assets tagged safety-critical.",
+            "detection_logic": ("Graph reachability from internet-exposed OR "
+                                "physical-entry (OBD-II/debug/removable-media) "
+                                "in-scope assets to assets tagged safety-critical. "
+                                f"Simple paths are enumerated up to {result['cutoff']} "
+                                "hops (--cutoff); longer paths reach the target but are "
+                                "not counted, so a path count of 0 means 'none within "
+                                "the cutoff', not 'unreachable'."),
             "risk_assessment": "Severity from path length, weakest hop auth, and "
                                "target integrity rating; physical-access entries "
                                "start one likelihood bucket lower than remote.",
@@ -966,9 +997,14 @@ def print_summary(g, result):
               f"techniques attested){lead}")
         print(f"      {path_mitigation_hint(g, p['shortest'], result['chokepoints'])}")
     print("\n  chokepoints (min node cut):")
-    for node, jewels in sorted(result["chokepoints"].items(),
-                               key=lambda kv: -len(kv[1])):
-        print(f"    {g.nodes[node]['title']} gates {len(jewels)} jewel path(s)")
+    for node, rec in sorted(result["chokepoints"].items(),
+                            key=lambda kv: (-len(kv[1]["jewels"]), kv[0])):
+        print(f"    {g.nodes[node]['title']} gates {len(rec['jewels'])} jewel path(s) "
+              f"(worst gated: {rec['worst']['severity']})")
+    if result.get("truncated_pairs"):
+        print(f"\n  NOTE: {result['truncated_pairs']} reachable (entry,jewel) pair(s) "
+              f"have no path within --cutoff {result['cutoff']} hops (num_paths reads 0 "
+              f"for them; raise --cutoff to enumerate).")
 
 
 def main():

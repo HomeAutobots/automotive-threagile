@@ -10,7 +10,7 @@ individual_risk_categories:
     check: Is every path from an external interface to a safety ECU broken by an authenticated, filtering boundary?
     function: architecture
     stride: elevation-of-privilege
-    detection_logic: Graph reachability from internet-exposed OR physical-entry (OBD-II/debug/removable-media) in-scope assets to assets tagged safety-critical.
+    detection_logic: Graph reachability from internet-exposed OR physical-entry (OBD-II/debug/removable-media) in-scope assets to assets tagged safety-critical. Simple paths are enumerated up to 8 hops (--cutoff); longer paths reach the target but are not counted, so a path count of 0 means 'none within the cutoff', not 'unreachable'.
     risk_assessment: Severity from path length, weakest hop auth, and target integrity rating; physical-access entries start one likelihood bucket lower than remote.
     false_positives: Paths broken by controls not modelled as links (e.g. physical air-gap) may be false positives.
     model_failure_possible_reason: false
@@ -480,7 +480,7 @@ individual_risk_categories:
         data_breach_technical_assets:
         - airbag-ecu
         most_relevant_technical_asset: airbag-ecu
-      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Body Domain Controller -> Rear Zone Controller -> On-Board Charger -> Battery Management System [4h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> T1692.001/T0849 -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> ATM-T0070 -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-rear:memory-protection (-1 likelihood)'
+      ? '<b>Attack path</b> Wi-Fi Bluetooth Module -> Body Domain Controller -> Rear Zone Controller -> On-Board Charger -> Battery Management System [4h, 6 path(s), weakest auth none] | ATT&CK: T0860 -> - -> T1692.001/T0849/T0867/T0866 -> T1692.001/T0849 -> T1692.001/T0849/T0831/T0880 | ATM: ATM-T0012 -> - -> ATM-T0070/ATM-T0051/ATM-T0052 -> ATM-T0070 -> ATM-T0070/ATM-T0068 | realism: corroborated (2/5 techniques attested; ATM-P0006, ATM-P0083, ATM-P0141) | entry: no public 2024-2025 exploit (prior unchanged) | controls: zone-rear:memory-protection (-1 likelihood)'
       : severity: elevated
         exploitation_likelihood: unlikely
         exploitation_impact: very-high
@@ -545,8 +545,8 @@ individual_risk_categories:
     model_failure_possible_reason: false
     cwe: 1188
     risks_identified:
-      <b>Chokepoint</b> Central Gateway gates 4 safety-critical path(s):
-        severity: critical
+      '<b>Chokepoint</b> Central Gateway gates 4 safety-critical path(s) (worst gated severity: high)':
+        severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
         data_breach_probability: possible
@@ -556,18 +556,8 @@ individual_risk_categories:
         - inverter
         - vcu
         most_relevant_technical_asset: central-gateway
-      <b>Chokepoint</b> Front Zone Controller gates 3 safety-critical path(s):
-        severity: critical
-        exploitation_likelihood: likely
-        exploitation_impact: very-high
-        data_breach_probability: possible
-        data_breach_technical_assets:
-        - airbag-ecu
-        - inverter
-        - vcu
-        most_relevant_technical_asset: zone-front
-      <b>Chokepoint</b> Chassis Zone Controller gates 3 safety-critical path(s):
-        severity: critical
+      '<b>Chokepoint</b> Chassis Zone Controller gates 3 safety-critical path(s) (worst gated severity: high)':
+        severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
         data_breach_probability: possible
@@ -576,17 +566,27 @@ individual_risk_categories:
         - flexray-actuator
         - steering-ecu
         most_relevant_technical_asset: zone-chassis
-      <b>Chokepoint</b> Battery Management System gates 2 safety-critical path(s):
-        severity: critical
+      '<b>Chokepoint</b> Front Zone Controller gates 3 safety-critical path(s) (worst gated severity: high)':
+        severity: high
         exploitation_likelihood: likely
+        exploitation_impact: very-high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - airbag-ecu
+        - inverter
+        - vcu
+        most_relevant_technical_asset: zone-front
+      '<b>Chokepoint</b> Battery Management System gates 2 safety-critical path(s) (worst gated severity: critical)':
+        severity: critical
+        exploitation_likelihood: very-likely
         exploitation_impact: very-high
         data_breach_probability: possible
         data_breach_technical_assets:
         - inverter
         - vcu
         most_relevant_technical_asset: bms
-      <b>Chokepoint</b> Vehicle Control Unit gates 2 safety-critical path(s):
-        severity: critical
+      '<b>Chokepoint</b> Vehicle Control Unit gates 2 safety-critical path(s) (worst gated severity: high)':
+        severity: high
         exploitation_likelihood: likely
         exploitation_impact: very-high
         data_breach_probability: possible
@@ -594,9 +594,9 @@ individual_risk_categories:
         - bms
         - inverter
         most_relevant_technical_asset: vcu
-      <b>Chokepoint</b> On-Board Charger gates 1 safety-critical path(s):
-        severity: high
-        exploitation_likelihood: likely
+      '<b>Chokepoint</b> On-Board Charger gates 1 safety-critical path(s) (worst gated severity: elevated)':
+        severity: elevated
+        exploitation_likelihood: unlikely
         exploitation_impact: very-high
         data_breach_probability: possible
         data_breach_technical_assets:

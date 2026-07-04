@@ -10,7 +10,7 @@ individual_risk_categories:
     check: Is every path from an external interface to a safety ECU broken by an authenticated, filtering boundary?
     function: architecture
     stride: elevation-of-privilege
-    detection_logic: Graph reachability from internet-exposed OR physical-entry (OBD-II/debug/removable-media) in-scope assets to assets tagged safety-critical.
+    detection_logic: Graph reachability from internet-exposed OR physical-entry (OBD-II/debug/removable-media) in-scope assets to assets tagged safety-critical. Simple paths are enumerated up to 8 hops (--cutoff); longer paths reach the target but are not counted, so a path count of 0 means 'none within the cutoff', not 'unreachable'.
     risk_assessment: Severity from path length, weakest hop auth, and target integrity rating; physical-access entries start one likelihood bucket lower than remote.
     false_positives: Paths broken by controls not modelled as links (e.g. physical air-gap) may be false positives.
     model_failure_possible_reason: false
@@ -57,9 +57,9 @@ individual_risk_categories:
     model_failure_possible_reason: false
     cwe: 1188
     risks_identified:
-      <b>Chokepoint</b> CAN Bridge (V850) gates 3 safety-critical path(s):
+      '<b>Chokepoint</b> CAN Bridge (V850) gates 3 safety-critical path(s) (worst gated severity: critical)':
         severity: critical
-        exploitation_likelihood: likely
+        exploitation_likelihood: very-likely
         exploitation_impact: very-high
         data_breach_probability: possible
         data_breach_technical_assets:
