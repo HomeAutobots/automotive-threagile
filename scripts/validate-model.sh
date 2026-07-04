@@ -120,6 +120,51 @@ for a in ta.values():
     if a["id"] not in membership and a["id"] not in oos:
         warnings.append(f"in-scope asset {a['id']!r} is not inside any trust boundary")
 
+# 5) field values are valid Threagile enums (a typo like `mision-critical` passes the
+#    fast parse + referential checks and only fails later in the slow Docker job).
+_CIA = {"archive", "operational", "important", "critical", "mission-critical"}
+_CONF = {"public", "internal", "restricted", "confidential", "strictly-confidential"}
+_USAGE = {"business", "devops"}
+ASSET_ENUMS = {
+    "type": {"external-entity", "process", "datastore"},
+    "size": {"system", "service", "application", "component"},
+    "machine": {"physical", "virtual", "container", "serverless"},
+    "encryption": {"none", "transparent", "data-with-symmetric-shared-key",
+                   "data-with-asymmetric-shared-key", "data-with-enduser-individual-key"},
+    "usage": _USAGE, "confidentiality": _CONF, "integrity": _CIA, "availability": _CIA,
+}
+DATA_ENUMS = {
+    "usage": _USAGE, "quantity": {"very-few", "few", "many", "very-many"},
+    "confidentiality": _CONF, "integrity": _CIA, "availability": _CIA,
+}
+LINK_ENUMS = {
+    "authentication": {"none", "credentials", "session-id", "token",
+                       "client-certificate", "two-factor", "externalized"},
+    "authorization": {"none", "technical-user", "enduser-identity-propagation"},
+    "usage": _USAGE,
+}
+BOUNDARY_TYPES = {"network-on-prem", "network-dedicated-hoster", "network-virtual-lan",
+                  "network-cloud-provider", "network-cloud-security-group",
+                  "network-policy-namespace-isolation", "execution-environment"}
+
+
+def _check_enums(kind, ident, obj, enums):
+    for field, valid in enums.items():
+        v = obj.get(field)
+        if v is not None and v not in valid:
+            errors.append(f"{kind} {ident!r}: {field}={v!r} not a valid Threagile value")
+
+
+for name, a in ta.items():
+    _check_enums("asset", a["id"], a, ASSET_ENUMS)
+    for lname, l in (a.get("communication_links") or {}).items():
+        _check_enums("link", f"{a['id']}->{l.get('target')}", l, LINK_ENUMS)
+for name, d in da.items():
+    _check_enums("data-asset", d["id"], d, DATA_ENUMS)
+for bname, b in tb.items():
+    if b.get("type") is not None and b["type"] not in BOUNDARY_TYPES:
+        errors.append(f"trust-boundary {b.get('id')!r}: type={b['type']!r} not a valid Threagile value")
+
 for w in warnings:
     print(f"WARN: {w}", file=sys.stderr)
 if errors:
