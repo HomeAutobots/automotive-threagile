@@ -98,6 +98,21 @@ def test_out_of_scope_asset_without_boundary_is_silent(tmp_path):
     assert errors == [] and warnings == []
 
 
+def test_internet_process_without_role_tag_is_a_warning(tmp_path):
+    m = _valid_model()
+    m["technical_assets"]["EXP"] = {
+        "id": "exp", "type": "process", "internet": True, "tags": ["can-fd"],
+        "integrity": "important"}  # 'can-fd' is a bus tag, not a role tag
+    m["trust_boundaries"]["B1"]["technical_assets_inside"].append("exp")
+    errors, warnings = _validate(tmp_path, m)
+    assert errors == []
+    assert any("no role/domain tag" in w for w in warnings)
+    # adding a role tag clears it
+    m["technical_assets"]["EXP"]["tags"].append("gateway")
+    errors, warnings = _validate(tmp_path, m)
+    assert not any("no role/domain tag" in w for w in warnings)
+
+
 def test_duplicate_keys_rejected(tmp_path):
     # StrictLoader must reject duplicate mapping keys like Threagile's Go parser.
     p = tmp_path / "dup.yaml"

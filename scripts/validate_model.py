@@ -46,6 +46,10 @@ LINK_ENUMS = {
 BOUNDARY_TYPES = {"network-on-prem", "network-dedicated-hoster", "network-virtual-lan",
                   "network-cloud-provider", "network-cloud-security-group",
                   "network-policy-namespace-isolation", "execution-environment"}
+# Role/domain tags -- the tag-driven rules key on these; an internet-exposed compute
+# asset lacking one is silently uncovered (model-lint warning).
+ROLE_TAGS = {"safety-critical", "ecu", "gateway", "zone-controller", "connectivity",
+             "infotainment", "telematics", "adas", "powertrain", "chassis", "body", "charging"}
 
 
 class StrictLoader(yaml.SafeLoader):
@@ -168,6 +172,14 @@ def validate(model_path: str) -> tuple[list, list]:
     for b in tb.values():
         if b.get("type") is not None and b["type"] not in BOUNDARY_TYPES:
             errors.append(f"trust-boundary {b.get('id')!r}: type={b['type']!r} not a valid Threagile value")
+
+    # 6) model-lint: an internet-exposed process asset with no role/domain tag gets
+    #    silently missed by the tag-driven rules -- warn so the tagging gap is visible.
+    for a in ta.values():
+        if (a.get("internet") and a.get("type") == "process"
+                and not a.get("out_of_scope") and not (set(a.get("tags") or []) & ROLE_TAGS)):
+            warnings.append(f"internet-exposed asset {a['id']!r} has no role/domain tag "
+                            f"(rules key on role tags -- it may be silently uncovered)")
 
     return errors, warnings
 
