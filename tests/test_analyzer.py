@@ -6,6 +6,9 @@ Tests are deterministic and import the analyzer as a module.
 
 import importlib.util
 import pathlib
+import re
+
+import yaml
 
 import networkx as nx
 
@@ -170,6 +173,32 @@ def test_likelihood_scale_tops_at_very_likely():
     # `frequent` was dead in path scoring; the scale is 3 buckets now.
     assert "frequent" not in apa.LIKELIHOOD_W
     assert apa.LADDER == ["unlikely", "likely", "very-likely"]
+
+
+def test_all_referenced_technique_ids_are_in_the_pinned_reference():
+    # Every ATT&CK / ATM technique id the analyzer references (hop tags,
+    # CONTROL_CATALOG defeats, ATM campaign evidence) must appear in the
+    # version-stamped allowlist. A typo'd or newly-added id fails here until
+    # known-technique-ids.yaml is updated AND re-verified against ATT&CK/ATM --
+    # this is what prevents the embedded IDs from rotting silently.
+    root = pathlib.Path(__file__).resolve().parent.parent
+    src = (root / "library" / "analyzer" / "attack_path_analyzer.py").read_text()
+    ref = yaml.safe_load(
+        (root / "library" / "analyzer" / "known-technique-ids.yaml").read_text())
+    valid = set(ref["attack_ids"]) | set(ref["atm_ids"])
+    referenced = set(re.findall(r'"(T\d{4}(?:\.\d{3})?|ATM-T\d{4})"', src))
+    unknown = sorted(referenced - valid)
+    assert not unknown, f"technique ids not in known-technique-ids.yaml: {unknown}"
+
+
+def test_auth_rank_covers_the_threagile_auth_enum():
+    # The custom rules detect `authentication: none` as "absence of every real auth
+    # enum value" (the omitempty gotcha); the analyzer ranks each in AUTH_RANK. If
+    # Threagile adds an auth enum, both silently mis-handle it -- pin the set so a
+    # new value fails here loudly and forces the rules + AUTH_RANK to be updated.
+    assert set(apa.AUTH_RANK) == {
+        "none", "credentials", "session-id", "token",
+        "externalized", "client-certificate", "two-factor"}
 
 
 # ---- technique tagging (tag_path) --------------------------------------------

@@ -48,6 +48,20 @@ jobs:
           python3 library/analyzer/attack_path_analyzer.py \
             examples/starter-skeleton.yaml --out /tmp/skeleton-paths.yaml >/dev/null
           echo "starter skeleton validates and produces paths"
+      - name: Attack-path severity histogram (report legibility)
+        run: |
+          python3 - <<'PY' | tee -a "${GITHUB_STEP_SUMMARY:-/dev/stdout}"
+          import yaml, collections
+          m = yaml.safe_load(open("model/attack-paths.yaml"))
+          c = collections.Counter()
+          for cat in m["individual_risk_categories"].values():
+              for r in cat["risks_identified"].values():
+                  c[r["severity"]] += 1
+          print("### Attack-path severity histogram\n")
+          print("| severity | count |\n|---|---|")
+          for s in ["critical", "high", "elevated", "medium", "low"]:
+              print(f"| {s} | {c.get(s, 0)} |")
+          PY
 
   tests:
     name: Pytest (analyzer unit tests)
@@ -58,9 +72,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Python deps
-        run: pip install pytest "networkx==3.1" pyyaml   # pinned for reproducible graph analysis
-      - name: Run pytest
-        run: pytest -q
+        run: pip install pytest pytest-cov "networkx==3.1" pyyaml   # pinned for reproducible graph analysis
+      - name: Run pytest (with coverage floor)
+        run: pytest -q --cov=library/analyzer --cov-report=term-missing --cov-fail-under=80
 
   lint:
     name: Ruff (Python)
@@ -104,7 +118,17 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
+      - name: Cache Threagile source + Go build
+        id: threagile-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/threagile-src
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: threagile-${{ env.THREAGILE_REF }}-go1.26
       - name: Fetch Threagile source (pinned) for the cmd/script harness
+        if: steps.threagile-cache.outputs.cache-hit != 'true'
         run: |
           git clone --no-checkout https://github.com/Threagile/threagile.git /tmp/threagile-src
           git -C /tmp/threagile-src checkout "$THREAGILE_REF"
