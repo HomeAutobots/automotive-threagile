@@ -1,0 +1,607 @@
+individual_risk_categories:
+  Cross-Domain Link From Exposed Domain to Safety Without Authenticated Filter:
+    id: cross-domain-link-no-filter
+    description: A defensible vehicle E/E architecture forces traffic from externally exposed domains (connectivity, telematics, infotainment, V2X, external devices) to cross an authenticated filtering boundary (a gateway or zone controller) before it can reach the safety domain (safety-critical actuation, powertrain, chassis). This rule flags a DIRECT communication link whose source carries an exposure tag (connectivity / telematics / infotainment / external / v2x) and whose target is in the safety domain (safety-critical / powertrain / chassis), where the link carries no authentication AND neither endpoint is a gateway or zone controller. Such a link lets a compromised exposed component address safety-domain assets without passing an authenticated filter, enabling lateral movement and privilege escalation from the remote attack surface into vehicle control. Maps to MITRE ATT&CK for ICS T0843 "Modify Program" and Enterprise T1210 "Exploitation of Remote Services", and Auto-ISAC ATM "Pivot to In-Vehicle Network" / "Lateral Movement to Safety Domain".
+    impact: If this risk is unmitigated, an attacker who compromises an internet/RF-exposed component can send traffic straight to safety-critical, powertrain, or chassis assets without crossing an authenticated gateway, collapsing the domain separation the architecture relies on and putting vehicle control directly within reach of a remote foothold.
+    asvs: V1 - Architecture, Design and Threat Modeling Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html
+    action: Authenticated Cross-Domain Filtering
+    mitigation: Route every link from an exposed domain to the safety domain through an authenticating gateway or zone controller that filters and authenticates cross-domain messages; do not wire exposed components directly to safety-domain assets. Where a direct link is unavoidable, require message authentication (e.g. SecOC / mutual TLS) on it. Model the link authenticated only once that control is actually designed in.
+    check: Does every direct link from a connectivity/telematics/infotainment/external/v2x source to a safety-critical/powertrain/chassis target either pass through a gateway/zone controller or carry authentication (not authentication "none")?
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: In-scope technical assets tagged with an exposure tag (connectivity, telematics, infotainment, external, v2x) that originate a communication link whose target is tagged safety-critical, powertrain, or chassis, where the link authentication is absent/"none" (not a real method) AND neither the source asset nor the target asset is tagged gateway or zone-controller. Because zero-value enums are dropped in the parsed model, authentication is treated as absent unless the link declares a real method (credentials, session-id, token, client-certificate, two-factor, externalized). A properly gatewayed hop is the mitigated case and is intentionally excluded.
+    risk_assessment: The risk rating depends on how directly the exposed source can drive the safety target and the integrity/availability sensitivity of that target. Direct exposed-to-safety links are high severity because they bypass domain separation.
+    false_positives: Links that traverse a gateway/zone controller (either endpoint tagged gateway or zone-controller) or that carry real authentication are mitigated and excluded. Direct links to safety-domain assets that are physically isolated or otherwise unreachable from the exposed source may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 923
+    risks_identified:
+      ? '<b>Cross-Domain Link Without Authenticated Filter</b> at <b>V2X Module</b>: an exposed-domain asset links directly to the safety domain with no authenticated gateway in between'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - v2x-module
+        most_relevant_technical_asset: v2x-module
+      ? '<b>Cross-Domain Link Without Authenticated Filter</b> at <b>GNSS Receiver</b>: an exposed-domain asset links directly to the safety domain with no authenticated gateway in between'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - gnss-receiver
+        most_relevant_technical_asset: gnss-receiver
+      ? '<b>Cross-Domain Link Without Authenticated Filter</b> at <b>Charge Port Controller</b>: an exposed-domain asset links directly to the safety domain with no authenticated gateway in between'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - charge-controller
+        most_relevant_technical_asset: charge-controller
+  Internet-Exposed Vehicle ECU Without Verified / Secure Boot:
+    id: internet-exposed-ecu-no-secure-boot
+    description: Connected on-board compute nodes that face the internet or RF networks (telematics control units, infotainment head units, connectivity modules, and other internet-reachable ECUs) are the primary remote attack surface of the vehicle. When such a node does not enforce a verified / secure boot chain anchored in an immutable hardware root of trust, an attacker who achieves code execution on it can write a malicious image or bootloader that survives reset and re-flash, turning a transient remote compromise into a persistent implant on the vehicle. In this model a node that implements verified/secure boot carries the secure-boot tag; the absence of that tag on an internet-reachable compute node means no immutable root of trust gates what executes at boot. Maps to MITRE ATT&CK Enterprise T1542 "Pre-OS Boot" (and T1542.001 "System Firmware") / ICS T0857 "System Firmware", and Auto-ISAC ATM "Establish Persistence on ECU" / "Bypass Secure Boot".
+    impact: If this risk is unmitigated, an attacker who gains code execution on an internet/RF-exposed ECU can install a persistent boot-time implant that re-establishes the foothold across reboots and firmware updates, evades remediation, and serves as a durable pivot toward in-vehicle networks and safety-critical domains.
+    asvs: V1 - Architecture, Design and Threat Modeling Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Secure_Product_Design_Cheat_Sheet.html
+    action: Verified / Secure Boot With Hardware Root of Trust
+    mitigation: Anchor a verified / secure boot chain in an immutable hardware root of trust (boot ROM, HSM/SE-backed keys) on every internet/RF-exposed compute node, so each boot stage cryptographically verifies the next and unsigned or modified images are rejected. Pair with rollback protection and authenticated firmware update (signed images). Once verified boot is designed in, tag the asset secure-boot; an internet-reachable compute node without that tag is treated as lacking an immutable root of trust for boot.
+    check: Does every internet/RF-exposed on-board compute node (ECU, telematics, infotainment, connectivity) enforce verified/secure boot anchored in an immutable hardware root of trust (i.e. carry the secure-boot tag)?
+    function: architecture
+    stride: tampering
+    detection_logic: In-scope technical assets with internet exposure (internet true) that are tagged as on-board compute (ecu, telematics, infotainment, or connectivity) and that do NOT carry the secure-boot tag. Because the DSL has no "not" operator, "tag absent" is expressed as an all-over-tags not-equal check against secure-boot, which is true on an empty or secure-boot-free tag list.
+    risk_assessment: The risk rating depends on the reachability of the node and what it can reach once persistently implanted; an internet-facing compute node that can pivot toward safety domains without verified boot is high severity.
+    false_positives: Internet-exposed compute nodes that genuinely enforce verified/secure boot (and are tagged secure-boot accordingly), or whose boot integrity is provided by an out-of-band mechanism modeled elsewhere, can be reviewed as false positives.
+    model_failure_possible_reason: false
+    cwe: 1326
+    risks_identified:
+      ? '<b>Internet-Exposed Vehicle ECU Without Secure Boot</b> at <b>V2X Module</b>: an internet-facing compute node lacks a verified boot chain and can be persistently implanted'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - v2x-module
+        most_relevant_technical_asset: v2x-module
+      ? '<b>Internet-Exposed Vehicle ECU Without Secure Boot</b> at <b>Wi-Fi Bluetooth Module</b>: an internet-facing compute node lacks a verified boot chain and can be persistently implanted'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - wifi-bt-module
+        most_relevant_technical_asset: wifi-bt-module
+      ? '<b>Internet-Exposed Vehicle ECU Without Secure Boot</b> at <b>GNSS Receiver</b>: an internet-facing compute node lacks a verified boot chain and can be persistently implanted'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - gnss-receiver
+        most_relevant_technical_asset: gnss-receiver
+      ? '<b>Internet-Exposed Vehicle ECU Without Secure Boot</b> at <b>Charge Port Controller</b>: an internet-facing compute node lacks a verified boot chain and can be persistently implanted'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - charge-controller
+        most_relevant_technical_asset: charge-controller
+  Internet-Exposed Vehicle ECU Without Encryption:
+    id: internet-exposed-ecu-unencrypted
+    description: Connected vehicle components that face the internet or RF networks (telematics control units, infotainment head units, connectivity modules) are the primary remote attack surface of the vehicle. When such an asset stores or processes data without encryption (encryption "none"), telemetry, location, credentials, and remote-command traffic are exposed to interception and tampering. This maps to MITRE ATT&CK T1040 "Network Sniffing" / Mobile T1439, and Auto-ISAC ATM "Intercept Vehicle Communications" and "Remote Vehicle Access via Telematics".
+    impact: If this risk is unmitigated, an attacker positioned on the cellular/Wi-Fi/cloud path (or who compromises the unit) can read or alter sensitive vehicle and user data in transit or at rest, and may pivot the remote channel toward in-vehicle networks.
+    asvs: V9 - Communication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
+    action: Encryption of Connected-Vehicle Data
+    mitigation: Terminate all external connectivity over TLS with certificate pinning and mutual authentication, and encrypt sensitive data at rest on the unit. For OEM backends use IPsec or TLS with hardware-backed key storage (HSM/SE). Do not mark the asset "encryption none" unless it genuinely handles no sensitive data.
+    check: Do all internet/RF-exposed ECUs (telematics, infotainment, connectivity) encrypt sensitive data in transit and at rest (i.e. not encryption "none")?
+    function: architecture
+    stride: information-disclosure
+    detection_logic: In-scope technical assets with internet exposure (internet true), tagged ecu, telematics, or infotainment, whose encryption is not set to a real encryption style (treated as "none"/absent).
+    risk_assessment: The risk rating depends on the confidentiality and integrity of the data processed and the reachability of the asset. Internet-facing assets handling vehicle/user data are rated medium-to-high.
+    false_positives: Assets that face the internet but process only public, non-sensitive data, or that delegate all encryption to a transparent lower layer modeled elsewhere, can be reviewed as false positives.
+    model_failure_possible_reason: false
+    cwe: 319
+    risks_identified:
+      ? '<b>Internet-Exposed Vehicle ECU Without Encryption</b> at <b>Telematics Control Unit</b>: an internet-facing ECU processes data without encryption'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: probable
+        data_breach_technical_assets:
+        - tcu
+        most_relevant_technical_asset: tcu
+      ? '<b>Internet-Exposed Vehicle ECU Without Encryption</b> at <b>Infotainment Head Unit</b>: an internet-facing ECU processes data without encryption'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: probable
+        data_breach_technical_assets:
+        - ivi
+        most_relevant_technical_asset: ivi
+  ISO 15118 Charging Session Without Mutual TLS:
+    id: iso15118-server-only-tls
+    description: ISO 15118 high-level communication between the in-vehicle EVCC (Charge Port Controller) and the off-board SECC (EVSE) secures the Plug & Charge session with TLS. ISO 15118-2 mandates only server-side TLS — the charging station presents a certificate, but the vehicle is not authenticated at the TLS layer (Plug & Charge contract credentials are an application-layer signature, not a TLS client certificate). With unilateral (server-only) TLS the channel lacks mutual authentication, so a machine-in-the-middle on the CCS PLC link — a malicious EVSE, a tampered charging cable, or a relay device — can impersonate a peer, observe or manipulate contract/billing exchanges, and abuse the session. ISO 15118-20 addresses this by adding mutual TLS. This maps to MITRE ATT&CK T1557 "Adversary-in-the-Middle" and Auto-ISAC ATM "Intercept Vehicle Communications" / "Compromise the Charging Session".
+    impact: If this risk is unmitigated, an attacker on the charging interface can stand between the vehicle and the station, harvest or alter Plug & Charge contract and billing data, conduct fraud or denial of charging, and use the foothold on the externally reachable EVCC as a pivot toward in-vehicle networks (server-side-only TLS, lacking client/mutual authentication).
+    asvs: V9 - Communication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/TLS_Cipher_String_Cheat_Sheet.html
+    action: Mutual TLS for ISO 15118 Charging
+    mitigation: Use mutually-authenticated TLS for ISO 15118 high-level communication (ISO 15118-20), with both the EVCC and SECC presenting and validating certificates chained to a trusted V2G PKI, plus certificate revocation/OCSP checking and pinning where feasible. Where ISO 15118-2 server-only TLS cannot be avoided, compensate with strict contract-certificate validation and physical/logical controls on the charging interface. Model the link with the `tls-mutual` tag (plus a `client-certificate` authentication value) once mutual TLS is in place.
+    check: Are all ISO 15118 (`iso15118`-tagged) charging links carried over mutual TLS (`tls-mutual` and/or a `client-certificate` authentication value) rather than server-only TLS?
+    function: architecture
+    stride: spoofing
+    detection_logic: In-scope technical assets that originate a communication link tagged `iso15118` that is not mutually authenticated — i.e. it does not carry the `tls-mutual` tag and its authentication is not `client-certificate`. The `tls-server-only` tag is the explicit marker for the flagged (unilateral-TLS) case.
+    risk_assessment: The risk rating depends on the exposure of the charging interface and the sensitivity of the contract/billing data and any pivot reachable from the EVCC. Externally reachable EVCCs on server-only TLS are rated elevated-to-high.
+    false_positives: ISO 15118 links carried over mutual TLS (tagged `tls-mutual` or modeled with a `client-certificate` authentication value) are false positives. A link tagged `iso15118` that is not actually a TLS-bearing high-level communication channel may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 295
+    risks_identified:
+      '<b>ISO 15118 Without Mutual TLS</b> at <b>Charge Port Controller</b>: a Plug & Charge link uses server-only TLS':
+        severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - charge-controller
+        most_relevant_technical_asset: charge-controller
+  Missing SecOC on Safety-Critical Fieldbus Link:
+    id: missing-secoc-on-safety-bus
+    description: AUTOSAR SecOC protects in-vehicle fieldbus messages with a symmetric AES-CMAC authenticator plus a freshness value, giving receivers verifiable data authenticity and replay protection. In this model SecOC is represented as a link with authentication "credentials". A CAN / CAN FD / LIN / FlexRay link that reaches a safety-critical actuation asset (brake-by-wire, steer-by-wire, BMS, inverter, VCU) WITHOUT SecOC (authentication anything other than "credentials") cannot verify that actuation frames are authentic and fresh, so a node on the segment can forge or replay commands. This is BROADER than the unauthenticated-safety-bus-link rule because it also flags links that carry some other authentication (e.g. a session token) but lack SecOC message authentication. Maps to MITRE ATT&CK for ICS T0855 "Unauthorized Command Message" and T0856 "Spoof Reporting Message", and Auto-ISAC ATM "Manipulate In-Vehicle Network Messaging".
+    impact: If this risk is unmitigated, an attacker with any foothold on the bus segment (a compromised ECU, a malicious diagnostic device, or a bridged zone controller) can inject or replay crafted frames that command unintended actuation of a safety-critical function, directly endangering vehicle occupants and other road users. Link-level transport authentication that is not SecOC (no AES-CMAC + freshness over the safety payload) does not stop frame forgery or replay on the bus.
+    asvs: V2 - Authentication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    action: In-Vehicle Message Authentication (SecOC)
+    mitigation: Apply AUTOSAR SecOC (symmetric AES-CMAC authenticator plus a freshness value, keyed per security domain) to every fieldbus link that reaches a safety-critical asset, and model that link with authentication "credentials". Transport- or session-level authentication that is not SecOC is insufficient on a broadcast fieldbus and must not be modeled as SecOC. Where SecOC is infeasible, segment the safety bus behind an authenticating gateway/zone controller and restrict which nodes may transmit safety message IDs.
+    check: Does every CAN / CAN FD / LIN / FlexRay link that reaches a safety-critical asset use SecOC, i.e. authentication "credentials" (AES-CMAC + freshness)?
+    function: architecture
+    stride: tampering
+    detection_logic: In-scope technical assets that originate at least one communication link tagged with a fieldbus (can, can-fd, lin, flexray) whose authentication is NOT "credentials" (SecOC), where either the link's target asset or the originating asset itself carries the "safety-critical" tag. Because zero-value enums are dropped in the parsed model, an absent/"none" authentication and any non-SecOC method (token, session-id, etc.) both satisfy "not credentials" and are flagged.
+    risk_assessment: The risk rating depends on the integrity and availability sensitivity of the safety-critical asset and the data assets carried on the bus. Safety-critical actuation is rated mission-critical, so these findings are high severity.
+    false_positives: Links genuinely protected by SecOC or an equivalent message-authentication scheme (modeled with authentication "credentials") are false positives. Diagnostic-only buses with no actuation reachable may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 345
+    risks_identified:
+      ? '<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>GNSS Receiver</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - gnss-receiver
+        most_relevant_technical_asset: gnss-receiver
+      ? '<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>Chassis Zone Controller</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - zone-chassis
+        most_relevant_technical_asset: zone-chassis
+      ? '<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>Front Zone Controller</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - zone-front
+        most_relevant_technical_asset: zone-front
+      ? '<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>Charge Port Controller</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - charge-controller
+        most_relevant_technical_asset: charge-controller
+      ? '<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>On-Board Charger</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - obc
+        most_relevant_technical_asset: obc
+      ? '<b>Missing SecOC on Safety-Critical Fieldbus Link</b> at <b>Driver Monitoring System</b>: a CAN/LIN/FlexRay link reaches a safety-critical asset without SecOC (AES-CMAC + freshness)'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - dms
+        most_relevant_technical_asset: dms
+  Reachable Unauthenticated Hardware Debug Port (JTAG/UART):
+    id: reachable-debug-port
+    description: On-chip debug and test interfaces (JTAG, SWD, UART consoles) give direct, low-level access to a controller, halting the core, reading and writing memory, extracting firmware and keys, and bypassing secure boot. In this model such an interface is represented as a communication link tagged physical. This rule flags an in-scope asset that is on either end of a physical-tagged debug link that carries no authentication, i.e. a JTAG/UART debug port left reachable without an authenticated secure-debug unlock. Distinct from reachable-unauthenticated-diagnostics, which covers the logical OBD-II / DoIP (UDS) surface; this rule covers the silicon-level hardware debug surface. Maps to MITRE ATT&CK for ICS T0839 "Module Firmware" / Enterprise T1542 "Pre-OS Boot" and Auto-ISAC ATM "Physical Access to ECU" / "Extract Firmware via Debug Interface".
+    impact: If this risk is unmitigated, an attacker with physical (or in-vehicle proximate) access to the debug port can extract firmware and secrets, modify code, disable secure boot, and use the controller as a durable foothold to pivot onto in-vehicle networks.
+    asvs: V2 - Authentication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    action: Authenticated / Disabled Debug Interfaces
+    mitigation: Disable or fuse off production debug interfaces, or gate them behind an authenticated secure-debug unlock (challenge-response with per-device keys) and a hardware root of trust. Do not model a debug link as authentication "none" once a secure-debug unlock is designed in. Where a debug header must remain, restrict physical access and log unlock attempts.
+    check: Does every physical-tagged hardware debug/test interface (JTAG/UART) require an authenticated unlock (i.e. not authentication "none"), or is it disabled in production?
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: In-scope technical assets that originate, or are the target of, a communication link tagged physical whose authentication is absent/"none" (not a real method). Because zero-value enums are dropped in the parsed model, authentication is treated as absent unless the link declares a real method (credentials, session-id, token, client-certificate, two-factor, externalized).
+    risk_assessment: The risk rating depends on the sensitivity of the controller and what is reachable from it; a debug port on a safety-relevant compute node is high severity.
+    false_positives: Debug links gated by an authenticated secure-debug unlock (modeled with an authentication value other than "none") or that are physically fused off in production are false positives.
+    model_failure_possible_reason: false
+    cwe: 1191
+    risks_identified:
+      ? '<b>Reachable Unauthenticated Hardware Debug Port</b> at <b>Infotainment Head Unit</b>: a physical JTAG/UART debug link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - ivi
+        most_relevant_technical_asset: ivi
+      ? '<b>Reachable Unauthenticated Hardware Debug Port</b> at <b>Debug Port</b>: a physical JTAG/UART debug link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - debug-port
+        most_relevant_technical_asset: debug-port
+  Relay-Vulnerable Passive Entry / Keyless Access:
+    id: relay-vulnerable-passive-entry
+    description: Passive-entry / passive-start (PEPS) and phone-as-a-key systems let a fob or phone unlock and start the vehicle over a short-range radio link (BLE and/or UWB) to the body domain. Cryptographic authentication of the key does NOT defeat a relay attack — two attackers simply forward (relay) the legitimate radio exchange between the real key and the car, defeating the proximity assumption and unlocking/starting the vehicle while the key is far away. The effective countermeasure is a secure distance measurement (UWB time-of-flight distance bounding) that proves the key is actually nearby. A passive-entry access link that is not distance-bounded is therefore relay-vulnerable regardless of its authentication. This maps to Auto-ISAC ATM "Relay Communications" (ATM-T0007) and "Short Range Wireless Communication" (ATM-T0065), and to MITRE ATT&CK Mobile T1438 / adversary-in-the-middle.
+    impact: If this risk is unmitigated, an attacker pair with cheap relay hardware can unlock, enter, and drive away the vehicle, or relay the start authorization, without possessing or cloning the key — a widely exploited, low-skill theft technique.
+    asvs: V2 - Authentication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    action: Distance-Bounded Passive Entry
+    mitigation: Gate passive entry/start on a secure ranging measurement — UWB time-of-flight distance bounding (e.g. CCC Digital Key) with cryptographically protected ranging — so a relayed exchange fails the proximity check. Add motion/intent checks and let users disable passive entry. Authentication and encryption of the key exchange alone do not stop a relay. Model the access link with the `distance-bounding` tag once secure ranging is actually designed in.
+    check: Do all short-range (BLE/UWB) passive-entry links to the body/access domain enforce secure distance bounding (the `distance-bounding` tag)?
+    function: architecture
+    stride: spoofing
+    detection_logic: In-scope technical assets that originate a communication link tagged `uwb` or `bluetooth` whose target is tagged `body` (a body/access domain controller) and which does NOT carry the `distance-bounding` tag. Distance bounding is treated as absent unless the link declares the `distance-bounding` tag; authentication state is deliberately ignored because it does not mitigate a relay.
+    risk_assessment: The rating depends on what the access link can authorize (entry only vs entry-and-start) and the exposure of the body domain it reaches; entry-and-start over a non-ranged link is high severity.
+    false_positives: Passive-entry links that enforce secure distance bounding (tagged `distance-bounding`) are false positives. A short-range link that cannot authorize entry/start (e.g. tire-pressure telemetry) and merely shares the body target may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 290
+    risks_identified:
+      '<b>Relay-Vulnerable Passive Entry</b> at <b>Wi-Fi Bluetooth Module</b>: a short-range access link is not distance-bounded':
+        severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - wifi-bt-module
+        most_relevant_technical_asset: wifi-bt-module
+  Unvalidated Removable-Media Interface (USB / SD):
+    id: removable-media-ingress
+    description: A removable-media host interface (USB, SD card) on an in-vehicle compute node parses user-supplied files — filesystems, codecs, firmware images, playlists — and can also be used to copy data off the vehicle. When the interface accepts media without validating the content (no signature/provenance check, no sandboxed parsing, autorun-style handling), it is both an initial-access vector (a malformed file or malicious payload compromises the parser) and an exfiltration channel for on-board data. This maps to Auto-ISAC ATM "Exploit via Removable Media" (ATM-T0013) and "Removable Media" exfiltration (ATM-T0006), and to MITRE ATT&CK T1091 "Replication Through Removable Media" / T1052 "Exfiltration over Physical Medium".
+    impact: If this risk is unmitigated, an attacker with brief physical access can plug in crafted media to gain code execution on the head unit or telematics stack, or copy sensitive on-board data (PII, keys, logs) off the vehicle, without any network exposure.
+    asvs: V12 - File and Resources Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+    action: Validated and Sandboxed Removable Media
+    mitigation: Treat removable media as untrusted — parse it in a sandboxed/least-privilege component, validate file types and signatures, disable autorun and auto-execution, and require signed packages for any firmware/update delivered via media. Restrict or disable data egress to media. Model the link with a real authentication value (signed/validated content) once such content validation is actually designed in.
+    check: Do all removable-media (`removable-media`-tagged) interfaces validate content (signed / sandboxed), i.e. the link is not modeled with authentication "none"?
+    function: architecture
+    stride: tampering
+    detection_logic: In-scope technical assets that originate a communication link tagged `removable-media` whose authentication is absent/"none". Because zero-value enums are dropped in the parsed model, authentication is treated as absent unless the link declares a real method (credentials, session-id, token, client-certificate, two-factor, externalized) representing validated or signed media content.
+    risk_assessment: The rating depends on the privilege of the parsing component and the sensitivity of data reachable for egress. A head unit that parses untrusted media in a privileged context is elevated-to-high severity.
+    false_positives: Removable-media interfaces that validate content (signed packages, sandboxed parsers — modeled with a real authentication value) are false positives. A read-only media interface that cannot parse complex formats or reach sensitive data may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 345
+    risks_identified:
+      ? '<b>Unvalidated Removable-Media Interface</b> at <b>Infotainment Head Unit</b>: a USB/SD interface parses untrusted media without validation'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - ivi
+        most_relevant_technical_asset: ivi
+  Safety-Critical Function Without Redundancy:
+    id: safety-function-without-redundancy
+    description: A safety-critical actuation or authority function (brake, steer, propulsion, restraints, battery management, AD compute) that has no redundant/fail-operational path is a single point of failure. An attacker who can deny that one node or its bus — by flooding the CAN segment, crashing the ECU, exhausting its resources, or jamming a sensor feed — removes the function entirely, with no fallback to keep the vehicle controllable. For SAE L3+ the dynamic driving task must remain available through faults, so a non-redundant safety function is a design weakness. This maps to Auto-ISAC ATM "CAN Bus Denial of Service" (ATM-T0068), "Denial of Service on Vehicle Function" (ATM-T0072), and "Jamming or Denial of Service" (ATM-T0002), and to MITRE ATT&CK for ICS T0814 "Denial of Service" / T0815 "Denial of View".
+    impact: If this risk is unmitigated, a single, possibly transient, denial-of-service action against one ECU or bus segment can disable braking, steering, propulsion, restraint, or AD decision-making, directly endangering occupants and other road users because no redundant path takes over.
+    asvs: V1 - Architecture, Design and Threat Modeling Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Denial_of_Service_Cheat_Sheet.html
+    action: Fail-Operational Redundancy for Safety Functions
+    mitigation: Provide a fail-operational design for safety-critical functions — redundant ECUs/actuation paths, an independent fallback channel, and bus-level DoS resistance (e.g. CAN-FD with intrusion detection, segmentation, rate limiting, and arbitration protection). Model the asset with `redundant` true once a fail-operational fallback is actually designed in.
+    check: Do all safety-critical functions have a redundant / fail-operational path, i.e. the asset is modeled with `redundant` true?
+    function: architecture
+    stride: denial-of-service
+    detection_logic: In-scope technical assets tagged `safety-critical` that are not modeled as redundant (redundant true). Redundancy is treated as absent unless the asset declares `redundant` true.
+    risk_assessment: The rating depends on the controllability impact of losing the function and the ease of denying its node/bus. Loss of braking, steering, or AD authority is high severity.
+    false_positives: Functions that genuinely have a fail-operational fallback (modeled with `redundant` true) are false positives. A `safety-critical`-tagged asset whose loss is fully mitigated by an independent mechanical or hydraulic fallback may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 400
+    risks_identified:
+      ? '<b>Safety-Critical Function Without Redundancy</b> at <b>ADAS AD Compute</b>: a safety function has no fail-operational fallback'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - adas-compute
+        most_relevant_technical_asset: adas-compute
+      ? '<b>Safety-Critical Function Without Redundancy</b> at <b>Vehicle Control Unit</b>: a safety function has no fail-operational fallback'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - vcu
+        most_relevant_technical_asset: vcu
+      ? '<b>Safety-Critical Function Without Redundancy</b> at <b>Inverter Motor Control</b>: a safety function has no fail-operational fallback'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - inverter
+        most_relevant_technical_asset: inverter
+      ? '<b>Safety-Critical Function Without Redundancy</b> at <b>Airbag Control Module</b>: a safety function has no fail-operational fallback'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - airbag-ecu
+        most_relevant_technical_asset: airbag-ecu
+      ? '<b>Safety-Critical Function Without Redundancy</b> at <b>Battery Management System</b>: a safety function has no fail-operational fallback'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - bms
+        most_relevant_technical_asset: bms
+      ? '<b>Safety-Critical Function Without Redundancy</b> at <b>FlexRay Chassis Actuator</b>: a safety function has no fail-operational fallback'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - flexray-actuator
+        most_relevant_technical_asset: flexray-actuator
+  Unauthenticated Gateway / Zone-Controller Bridge:
+    id: unauthenticated-gateway-bridge
+    description: Gateways and zone controllers are the segmentation enforcement points of a vehicle E/E architecture, bridging traffic between domains and security zones, and are expected to authenticate the messages they forward across those boundaries. This rule flags an in-scope asset tagged gateway or zone-controller that ORIGINATES a communication link carrying no authentication. Such a bridge forwards traffic across a boundary without authenticating it, so a node that can reach one side of the bridge can have unauthenticated frames relayed onto the other segment, weakening the very segmentation the architecture relies on. Unlike cross-domain-link-no-filter (which fires when NEITHER endpoint is a gateway/zone controller, i.e. a missing filter), this rule fires precisely when the bridging node IS the gateway/zone controller but its outgoing link is unauthenticated, i.e. a filter that is present but not authenticating. Maps to MITRE ATT&CK for ICS T0843 "Modify Program" / Enterprise T1210 "Exploitation of Remote Services", and Auto-ISAC ATM "Pivot to In-Vehicle Network" / "Lateral Movement to Safety Domain".
+    impact: If this risk is unmitigated, a node on one segment can drive traffic through the gateway/zone controller onto another segment without the bridge authenticating it, collapsing the trust boundary the segmentation point is meant to enforce and enabling lateral movement and privilege escalation across domains.
+    asvs: V1 - Architecture, Design and Threat Modeling Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Network_Segmentation_Cheat_Sheet.html
+    action: Authenticated Gateway Forwarding
+    mitigation: Authenticate every link a gateway or zone controller forwards across a boundary (e.g. SecOC on fieldbus segments, mutual TLS / MACsec / IPsec on Ethernet), and enforce a per-message filtering policy on the bridge. Do not model a bridging link as authentication "none" once message authentication is actually designed in. Where a segment cannot carry authentication, terminate it at the bridge and re-originate authenticated traffic instead of transparently relaying it.
+    check: Does every communication link originated by a gateway or zone controller carry authentication (not authentication "none")?
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: In-scope technical assets tagged gateway or zone-controller that originate at least one communication link whose authentication is absent/"none" (not a real method). Because zero-value enums are dropped in the parsed model, authentication is treated as absent unless the link declares a real method (credentials, session-id, token, client-certificate, two-factor, externalized).
+    risk_assessment: The risk rating depends on which segments the bridge connects and the sensitivity of the assets reachable through it. A bridge between an exposed domain and the safety domain is high severity.
+    false_positives: Bridging links genuinely protected by message authentication (modeled with an authentication value other than "none") are false positives. Links a gateway terminates rather than transparently forwards may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 306
+    risks_identified:
+      ? '<b>Unauthenticated Gateway / Zone-Controller Bridge</b> at <b>Central Vehicle Computer</b>: a segmentation enforcement point forwards a link with no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - central-compute
+        most_relevant_technical_asset: central-compute
+      ? '<b>Unauthenticated Gateway / Zone-Controller Bridge</b> at <b>Central Gateway</b>: a segmentation enforcement point forwards a link with no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - central-gateway
+        most_relevant_technical_asset: central-gateway
+      ? '<b>Unauthenticated Gateway / Zone-Controller Bridge</b> at <b>Chassis Zone Controller</b>: a segmentation enforcement point forwards a link with no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - zone-chassis
+        most_relevant_technical_asset: zone-chassis
+      ? '<b>Unauthenticated Gateway / Zone-Controller Bridge</b> at <b>Front Zone Controller</b>: a segmentation enforcement point forwards a link with no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - zone-front
+        most_relevant_technical_asset: zone-front
+      ? '<b>Unauthenticated Gateway / Zone-Controller Bridge</b> at <b>Rear Zone Controller</b>: a segmentation enforcement point forwards a link with no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - zone-rear
+        most_relevant_technical_asset: zone-rear
+  Unauthenticated Safety-Critical Fieldbus Link:
+    id: unauthenticated-safety-bus-link
+    description: In-vehicle fieldbuses (CAN, CAN FD, LIN, FlexRay) provide no native message authentication. When an unauthenticated fieldbus link reaches a safety-critical actuation asset (brake-by-wire, steer-by-wire, BMS, inverter, VCU), any node able to place frames on that segment can forge actuation commands. This corresponds to spoofing/tampering of in-vehicle network messages (MITRE ATT&CK for ICS T0855 "Unauthorized Command Message" and T0843 "Modify Program"; Auto-ISAC ATM "Manipulate In-Vehicle Network Messaging").
+    impact: If this risk is unmitigated, an attacker with any foothold on the bus segment (a compromised ECU, a malicious diagnostic device, or a bridged zone controller) can inject crafted frames that command unintended actuation of a safety-critical function, directly endangering vehicle occupants and other road users.
+    asvs: V2 - Authentication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    action: In-Vehicle Message Authentication
+    mitigation: Apply AUTOSAR SecOC (or an equivalent message authentication scheme) so that actuation frames carry a freshness value and a truncated MAC keyed per security domain. Where SecOC is infeasible, segment the safety bus behind an authenticating gateway/zone controller, restrict which nodes may transmit safety message IDs, and monitor for anomalous frames. Mark the link authenticated in the model only once a message-authentication scheme is actually designed in.
+    check: Does every fieldbus link that reaches a safety-critical asset use SecOC or an equivalent message-authentication mechanism (i.e. not authentication "none")?
+    function: architecture
+    stride: tampering
+    detection_logic: In-scope technical assets that originate at least one communication link tagged with a fieldbus (can, can-fd, lin, flexray) that carries no authentication, where either the link's target asset or the originating asset itself carries the "safety-critical" tag. Authentication is treated as absent unless the link declares a real method (credentials, session-id, token, client-certificate, two-factor, externalized).
+    risk_assessment: The risk rating depends on the integrity and availability sensitivity of the safety-critical asset and the data assets carried on the bus. Safety-critical actuation is rated mission-critical, so these findings are high severity.
+    false_positives: Links protected by SecOC or equivalent (model them with an authentication value other than "none") are false positives. Diagnostic-only buses with no actuation reachable may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 306
+    risks_identified:
+      ? '<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>GNSS Receiver</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - gnss-receiver
+        most_relevant_technical_asset: gnss-receiver
+      ? '<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>Chassis Zone Controller</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - zone-chassis
+        most_relevant_technical_asset: zone-chassis
+      ? '<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>Front Zone Controller</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - zone-front
+        most_relevant_technical_asset: zone-front
+      ? '<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>Charge Port Controller</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - charge-controller
+        most_relevant_technical_asset: charge-controller
+      ? '<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>On-Board Charger</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - obc
+        most_relevant_technical_asset: obc
+      ? '<b>Unauthenticated Safety-Critical Fieldbus Link</b> at <b>Driver Monitoring System</b>: an unauthenticated CAN/LIN/FlexRay link reaches a safety-critical asset'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: improbable
+        data_breach_technical_assets:
+        - dms
+        most_relevant_technical_asset: dms
+  Unauthenticated SOME/IP Service-Oriented Link:
+    id: unauthenticated-someip-service-link
+    description: Service-oriented in-vehicle communication over Automotive Ethernet (SOME/IP and SOME/IP-SD) carries remote procedure calls, event notifications, and service discovery between HPC nodes, zone controllers, and domain ECUs. SOME/IP has no built-in authentication, so a link that carries it without an authenticating/encrypting layer (TLS, IPsec, or MACsec) lets any node on the segment offer spoofed services via SOME/IP-SD, subscribe to or inject RPCs and events, enumerate the service graph, and pivot between domains. This maps to MITRE ATT&CK for ICS T0830/T0842 and Auto-ISAC ATM "Network Service Scanning" (ATM-T0044), "System Network Connections Discovery" (ATM-T0049), "Remote Services" (ATM-T0053), "Bridge Vehicle Networks" (ATM-T0051), and "Network Sniffing" (ATM-T0038).
+    impact: If this risk is unmitigated, an attacker who reaches the Ethernet segment (from a compromised connected ECU, a head unit, or a diagnostic foothold) can discover and invoke in-vehicle services, spoof service offerings, and move laterally across zonal/domain boundaries toward safety-relevant functions, all without presenting any credential.
+    asvs: V9 - Communication Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+    action: Authenticated Service-Oriented Communication
+    mitigation: Authenticate and integrity-protect SOME/IP traffic — terminate it over mutual TLS (or DTLS) for service endpoints, and/or enable MACsec on the Automotive Ethernet links so SOME/IP-SD offers and RPCs cannot be spoofed or injected by an unauthenticated node. Combine with allow-listed service access control at the gateways/zone controllers. Do not model a SOME/IP link as authentication "none" once such a control is designed in.
+    check: Do all SOME/IP (`some-ip`-tagged) service links require authentication (mutual TLS/DTLS or an equivalent authenticated/MACsec layer), i.e. not authentication "none"?
+    function: architecture
+    stride: elevation-of-privilege
+    detection_logic: In-scope technical assets that originate at least one communication link tagged `some-ip` that carries no authentication. Authentication is treated as absent unless the link declares a real method (credentials, session-id, token, client-certificate, two-factor, externalized).
+    risk_assessment: The risk rating depends on which services and domains the segment reaches; a SOME/IP segment that bridges toward safety-critical functions is high severity.
+    false_positives: SOME/IP links carried over mutual TLS/DTLS or an authenticated/MACsec layer (modeled with an authentication value other than "none") are false positives. A purely intra-ECU in-process service call mismodeled with the `some-ip` tag may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 306
+    risks_identified:
+      ? '<b>Unauthenticated SOME/IP Service Link</b> at <b>Telematics Control Unit</b>: a service-oriented Ethernet link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - tcu
+        most_relevant_technical_asset: tcu
+      ? '<b>Unauthenticated SOME/IP Service Link</b> at <b>Infotainment Head Unit</b>: a service-oriented Ethernet link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - ivi
+        most_relevant_technical_asset: ivi
+      ? '<b>Unauthenticated SOME/IP Service Link</b> at <b>V2X Module</b>: a service-oriented Ethernet link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - v2x-module
+        most_relevant_technical_asset: v2x-module
+      ? '<b>Unauthenticated SOME/IP Service Link</b> at <b>Central Vehicle Computer</b>: a service-oriented Ethernet link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - central-compute
+        most_relevant_technical_asset: central-compute
+      ? '<b>Unauthenticated SOME/IP Service Link</b> at <b>ADAS AD Compute</b>: a service-oriented Ethernet link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - adas-compute
+        most_relevant_technical_asset: adas-compute
+      ? '<b>Unauthenticated SOME/IP Service Link</b> at <b>Central Gateway</b>: a service-oriented Ethernet link carries no authentication'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: medium
+        data_breach_probability: possible
+        data_breach_technical_assets:
+        - central-gateway
+        most_relevant_technical_asset: central-gateway
+  Cryptographic Key / Credential Storage Without Hardware Protection:
+    id: unprotected-key-storage
+    description: ECUs that hold long-term cryptographic material — ECU signing keys, TLS/V2X/ISO 15118 certificates and private keys, SecOC master keys, secure-boot keys — are high-value targets. When that material is held without hardware-backed protection (an HSM / SHE / secure element with key isolation and tamper resistance), an attacker who gains code execution or physical access can dump the keys from flash/RAM. Extracted keys break every downstream trust relationship they anchor — forging firmware, impersonating the vehicle to the backend or charging network, spoofing authenticated bus traffic, or minting V2X messages. This maps to Auto-ISAC ATM "ECU Credential Dumping" (ATM-T0039), "Unsecured Credentials" (ATM-T0040), and "Compromise Cryptographic Security" (ATM-T0075), and to MITRE ATT&CK T1552 "Unsecured Credentials" / ATT&CK for ICS T0859 "Valid Accounts".
+    impact: If this risk is unmitigated, key extraction from one ECU can compromise the trust anchors for OTA, backend authentication, SecOC, secure boot, charging, or V2X across the vehicle and potentially the fleet, enabling forgery and impersonation that no downstream control detects.
+    asvs: V6 - Stored Cryptography Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html
+    action: Hardware-Backed Key Storage
+    mitigation: Store and use long-term keys inside a hardware security module / SHE / secure element so the private key material never leaves the hardware boundary; perform signing and key agreement on-chip, enforce key-usage isolation, and bind keys to a tamper-resistant root of trust. Model the asset with the `hsm` tag once hardware-backed key storage is actually designed in.
+    check: Do all ECUs that hold cryptographic key/credential material (any data asset tagged `key-material`) protect it with hardware-backed storage (the `hsm` tag)?
+    function: architecture
+    stride: information-disclosure
+    detection_logic: In-scope technical assets that process or store a data asset tagged `key-material` and do NOT carry the `hsm` tag. Hardware-backed protection is treated as absent unless the asset declares the `hsm` tag. Matching the data-asset TAG (not a fixed id) keeps the rule portable across vehicle models.
+    risk_assessment: The rating depends on what trust the keys anchor and the reachability of the asset. Internet/RF-exposed ECUs holding signing or backend-authentication keys without an HSM are high severity because a remote compromise yields fleet-relevant key material.
+    false_positives: Assets that hold key material in an HSM/SHE/secure element (tagged `hsm`) are false positives. An asset that only transiently handles a public certificate (no private key) but is modeled as processing `crypto-material` may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 320
+    risks_identified:
+      ? '<b>Unprotected Key Storage</b> at <b>Telematics Control Unit</b>: cryptographic material is held without hardware-backed protection'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: probable
+        data_breach_technical_assets:
+        - tcu
+        most_relevant_technical_asset: tcu
+      ? '<b>Unprotected Key Storage</b> at <b>Charge Port Controller</b>: cryptographic material is held without hardware-backed protection'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: probable
+        data_breach_technical_assets:
+        - charge-controller
+        most_relevant_technical_asset: charge-controller
+  Firmware Update Without Signature Verification (Uptane):
+    id: unverified-firmware-update
+    description: An ECU that receives and installs firmware/software updates must verify the integrity and authenticity of the image before applying it — independently of the transport. The automotive reference design for this is Uptane — a Director and an Image repository sign update metadata with role-separated, threshold keys, the Primary ECU performs full verification, and every Secondary performs at least partial verification (Targets metadata plus image hash/signature) before flashing. When a firmware-handling ECU does not perform this on-device verification, a compromised OTA backend, a malicious mirror, a tampered Primary, or a man-in-the-middle that gets past the transport can install arbitrary firmware, and rollback protection is absent. Transport encryption/authentication (TLS) does NOT cover this — it protects the link, not the image. This maps to Auto-ISAC ATM "Supply Chain Compromise" (ATM-T0017), "Bypass Code Integrity Protections" (ATM-T0031), and "Disable Software Update" (ATM-T0021), and to MITRE ATT&CK for ICS T0857 "System Firmware" / Enterprise T1601 "Modify System Image". A production instance of the rollback case is CVE-2023-26245 (Hyundai/Kia/Genesis Gen5W_L IVI), where an OTA version-check bypass in the AppUpgrade binary enabled installing a downgraded (older, vulnerable) firmware image.
+    impact: If this risk is unmitigated, an attacker who reaches any point in the update pipeline can push malicious or downgraded firmware to the ECU, gaining durable, possibly safety-impacting code execution that survives reboot and OTA, potentially across the fleet.
+    asvs: V10 - Malicious Code Verification Requirements
+    cheat_sheet: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+    action: Verified (Uptane) Firmware Updates
+    mitigation: Verify every update on-device against signed metadata before install — adopt Uptane (Director + Image repos, role-separated threshold signatures, full verification on Primaries and at least partial verification on Secondaries) with anti-rollback (version/timestamp checks) and keys held in hardware. Do not rely on transport security alone. Model the asset with the `firmware-signing` tag once on-device image verification is actually designed in.
+    check: Do all ECUs that receive/install firmware (process any data asset tagged `firmware-image`) verify signed images on-device (the `firmware-signing` tag)?
+    function: architecture
+    stride: tampering
+    detection_logic: In-scope technical assets that process or store a data asset tagged `firmware-image` and do NOT carry the `firmware-signing` tag. On-device verification is treated as absent unless the asset declares the `firmware-signing` tag. Matching the data-asset TAG (not a fixed id) keeps the rule portable across vehicle models.
+    risk_assessment: The rating depends on the privilege of the ECU and what it controls; a safety-relevant ECU or a zone controller that flashes downstream ECUs without verification is high severity.
+    false_positives: ECUs that perform on-device signed-image verification (tagged `firmware-signing`) are false positives. An asset that merely relays firmware bytes without ever installing or executing them may be reviewed individually.
+    model_failure_possible_reason: false
+    cwe: 494
+    risks_identified:
+      ? '<b>Firmware Update Without Signature Verification</b> at <b>Chassis Zone Controller</b>: an ECU installs firmware without on-device image verification'
+      : severity: elevated
+        exploitation_likelihood: likely
+        exploitation_impact: high
+        data_breach_probability: probable
+        data_breach_technical_assets:
+        - zone-chassis
+        most_relevant_technical_asset: zone-chassis

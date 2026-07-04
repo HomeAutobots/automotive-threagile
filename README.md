@@ -29,9 +29,11 @@ guide in [`examples/README.md`](examples/README.md).**
 | `library/conventions.md` | The modeling contract. |
 | `library/custom-risk-rules/` | Custom Threagile YAML risk rules + test fixture. |
 | `library/analyzer/attack_path_analyzer.py` | Multi-hop attack-path analyzer (Python + networkx). |
+| `library/analyzer/rules_runner.py` | Evaluates the 16 custom rules -> `individual_risk_categories` (so they ship). |
 | `library/analyzer/examples/` | Bundled demo model + expected analyzer output (used by CI). |
 | `model/threagile.yaml` | The canonical BEV model (this vehicle's instance). |
-| `model/attack-paths.yaml` | Generated `individual_risk_categories` from the analyzer. |
+| `model/attack-paths.yaml` | Generated `individual_risk_categories` (attack paths + chokepoints). |
+| `model/rules-findings.yaml` | Generated `individual_risk_categories` (the 16 custom rules). |
 | `examples/starter-skeleton.yaml` | Minimal valid 3-node model to start a new vehicle from. |
 | `scripts/run-threagile.sh` | Wrapper around the Threagile Docker image. |
 | `scripts/validate-model.sh` | Model parse + referential-integrity + vocab-drift checks. |
@@ -72,10 +74,11 @@ diff <(grep -v '^#' /tmp/demo.yaml) <(grep -v '^#' library/analyzer/examples/jee
 Generated from the current model by `./scripts/run-threagile.sh` and
 `library/analyzer/attack_path_analyzer.py` (reproducible — your numbers will track the model).
 
-- **Threagile report:** built-in rules plus the merged multi-hop findings below. (The custom
-  rules in `library/custom-risk-rules/` are validated separately via the `cmd/script` harness;
-  upstream auto-loading is unconfirmed, so they are not part of the built-in count. Run
-  `./scripts/run-threagile.sh` for the current totals.)
+- **Threagile report:** built-in rules, the merged multi-hop findings below, AND the 16 custom
+  risk rules. The released image doesn't auto-load YAML rules, so `rules_runner.py` evaluates
+  them and emits `model/rules-findings.yaml` (46 findings across 14 rule categories), which
+  `run-threagile.sh` merges into the report alongside the attack paths. (The YAML rules are also
+  independently validated via the `cmd/script` harness.)
 - **Multi-hop attack paths:** 8 entry points — 6 internet/RF-exposed (TCU, IVI, V2X, Wi-Fi/BT,
   GNSS, charge port) plus 2 physical (OBD-II port, debug port, scored one bucket below remote) —
   reach 8 safety-critical crown jewels (brake, steer, VCU, inverter, BMS, airbag, ADAS compute,

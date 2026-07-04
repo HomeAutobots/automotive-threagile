@@ -42,6 +42,14 @@ jobs:
                <(grep -v '^#' /tmp/real-paths.yaml) \
             || { echo "::error::model/attack-paths.yaml is STALE. Regenerate: python3 library/analyzer/attack_path_analyzer.py model/threagile.yaml --out model/attack-paths.yaml"; exit 1; }
           echo "attack-paths.yaml is up to date"
+      - name: Rules-findings drift check (committed model/rules-findings.yaml is current)
+        run: |
+          python3 library/analyzer/rules_runner.py \
+            model/threagile.yaml --out /tmp/rules-findings.yaml
+          diff <(grep -v '^#' model/rules-findings.yaml) \
+               <(grep -v '^#' /tmp/rules-findings.yaml) \
+            || { echo "::error::model/rules-findings.yaml is STALE. Regenerate: python3 library/analyzer/rules_runner.py model/threagile.yaml --out model/rules-findings.yaml"; exit 1; }
+          echo "rules-findings.yaml is up to date"
       - name: Starter skeleton stays valid (adopter on-ramp)
         run: |
           ./scripts/validate-model.sh examples/starter-skeleton.yaml
@@ -99,8 +107,8 @@ jobs:
           python-version: "3.12"
       - name: Install mypy
         run: pip install mypy types-PyYAML   # networkx has no stubs -> ignored via mypy.ini
-      - name: Type-check analyzer + validator
-        run: mypy library/analyzer/attack_path_analyzer.py scripts/validate_model.py
+      - name: Type-check analyzer + rules-runner + validator
+        run: mypy library/analyzer/attack_path_analyzer.py library/analyzer/rules_runner.py scripts/validate_model.py
 
   threagile:
     name: Threagile analyze + report artifact

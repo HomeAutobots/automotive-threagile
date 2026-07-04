@@ -2,12 +2,13 @@
 # Thin wrapper around the Threagile Docker image.
 # Usage: scripts/run-threagile.sh [model.yaml] [output_dir]
 #
-# Multi-hop merge: if the default model is used and model/attack-paths.yaml exists
-# (produced by library/analyzer/attack_path_analyzer.py), this concatenates the model with that
-# file into a combined model so the analyzer's individual_risk_categories (attack paths +
-# chokepoints) appear in the same report. The analyzer output only adds a top-level
-# `individual_risk_categories:` block that the base model lacks, so concatenation is valid
-# YAML. (The released image silently ignores Threagile's `includes:` key, hence this merge.)
+# Findings merge: for the default model, this merges the two generated
+# individual_risk_categories blocks -- model/attack-paths.yaml (multi-hop paths +
+# chokepoints, from attack_path_analyzer.py) and model/rules-findings.yaml (the custom
+# risk rules, from rules_runner.py) -- into a combined model so BOTH appear in the same
+# report. Both files carry a top-level `individual_risk_categories:` key, so they can't
+# just be concatenated (duplicate key); a small Python step merges the category maps.
+# (The released image silently ignores Threagile's `includes:` key, hence this merge.)
 #
 # NOTE: the official threagile/threagile image (v1.0.0, build 20240730113903) uses
 # FLAG-style args (-model / -output / -verbose), NOT subcommands. An invocation like
@@ -26,10 +27,20 @@ THREAGILE_IMAGE="${THREAGILE_IMAGE:-threagile/threagile@sha256:abb9eccb111a2059c
 mkdir -p "$OUT"
 
 RUN_MODEL="$MODEL"
-if [ "$MODEL" = "model/threagile.yaml" ] && [ -f model/attack-paths.yaml ]; then
+if [ "$MODEL" = "model/threagile.yaml" ]; then
   RUN_MODEL="${OUT}/combined-model.yaml"
-  { cat model/threagile.yaml; echo; cat model/attack-paths.yaml; } > "$RUN_MODEL"
-  echo "Merged model/attack-paths.yaml into ${RUN_MODEL}"
+  python3 - "$RUN_MODEL" <<'PY'
+import os, sys, yaml
+model = yaml.safe_load(open("model/threagile.yaml"))
+irc = {}
+for f in ("model/attack-paths.yaml", "model/rules-findings.yaml"):
+    if os.path.isfile(f):
+        irc.update((yaml.safe_load(open(f)) or {}).get("individual_risk_categories") or {})
+if irc:
+    model["individual_risk_categories"] = irc
+yaml.safe_dump(model, open(sys.argv[1], "w"), sort_keys=False, width=10_000, allow_unicode=True)
+print(f"Merged {len(irc)} risk categories (attack paths + custom rules) into {sys.argv[1]}")
+PY
 fi
 
 docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd):/app/work" "$THREAGILE_IMAGE" \
